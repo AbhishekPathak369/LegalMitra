@@ -1,104 +1,316 @@
 /* src/Pages/HomePage/HomePage.css */
 .homepage {
   width: 100%;
+  min-height: calc(100vh - 140px); /* Ensure footer sticks to bottom */
 }
 
-.hero {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 4rem 0;
-  text-align: center;
-  color: white;
-  min-height: 60vh;
+/* Carousel Styles */
+.carousel-section {
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 2rem; /* Space for content below */
+}
+
+.carousel-container {
+  position: relative;
+  width: 100%;
+  height: 45vh; /* Reduced professional height */
+  min-height: 300px; /* Minimum height */
+  max-height: 400px; /* Maximum height */
+}
+
+.carousel-track {
+  display: flex;
+  transition: transform 0.5s ease-in-out;
+  height: 100%;
+}
+
+.carousel-slide {
+  flex: 0 0 100%;
+  height: 100%;
+}
+
+.slide-link {
+  display: block;
+  width: 100%;
+  height: 100%;
+  text-decoration: none;
+  color: inherit;
+}
+
+.slide-background {
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  position: relative;
+}
+
+.slide-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4); /* Darker overlay for better text readability */
   display: flex;
   align-items: center;
+  justify-content: center;
+  padding: 2rem;
 }
 
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 2rem;
+.slide-content {
+  text-align: center;
+  color: white;
+  max-width: 900px;
+  padding: 0;
 }
 
-.hero-title {
-  font-size: 2.5rem;
-  margin-bottom: 1rem;
-  font-weight: 800;
+.slide-title {
+  font-size: 2.2rem;
+  font-weight: 700;
+  margin-bottom: 0.8rem;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+  line-height: 1.2;
 }
 
-.highlight {
-  color: #fbbf24;
-}
-
-.hero-description {
+.slide-subtitle {
   font-size: 1.1rem;
-  margin-bottom: 2rem;
-  opacity: 0.9;
+  margin-bottom: 1.2rem;
+  opacity: 0.95;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+  line-height: 1.6;
   max-width: 600px;
   margin-left: auto;
   margin-right: auto;
-  line-height: 1.6;
 }
 
-.hero-buttons {
-  display: flex;
-  gap: 1rem;
-  justify-content: center;
-  flex-wrap: wrap;
+.slide-description {
+  font-size: 0.95rem;
+  margin-bottom: 1.8rem;
+  opacity: 0.85;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+  line-height: 1.5;
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
-.btn {
-  padding: 0.8rem 1.5rem;
+.slide-cta {
+  background: #dc2626;
+  color: white;
   border: none;
-  border-radius: 5px;
+  padding: 0.8rem 2rem;
+  font-size: 0.95rem;
   font-weight: 600;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.slide-cta:hover {
+  background: #b91c1c;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+}
+
+/* Navigation Arrows */
+.carousel-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  color: white;
+  font-size: 1.8rem;
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.carousel-arrow:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: translateY(-50%) scale(1.1);
+}
+
+.carousel-arrow-prev {
+  left: 1.5rem;
+}
+
+.carousel-arrow-next {
+  right: 1.5rem;
+}
+
+/* Dots Indicator */
+.carousel-dots {
+  position: absolute;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0.6rem;
+  z-index: 10;
+}
+
+.carousel-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 2px solid white;
+  background: transparent;
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
-.primary-btn {
-  background: #dc2626;
-  color: white;
-  font-size: 1rem;
+.carousel-dot.active {
+  background: white;
+  transform: scale(1.3);
 }
 
-.primary-btn:hover {
-  background: #b91c1c;
-  transform: translateY(-2px);
+.carousel-dot:hover {
+  background: rgba(255, 255, 255, 0.5);
 }
 
-.secondary-btn {
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  font-size: 1rem;
-}
-
-.secondary-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: translateY(-2px);
-}
-
-@media (max-width: 768px) {
-  .hero {
-    padding: 3rem 0;
-    min-height: 50vh;
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .carousel-container {
+    height: 40vh;
+    min-height: 280px;
+    max-height: 350px;
   }
   
-  .hero-title {
+  .slide-title {
     font-size: 2rem;
   }
   
-  .hero-description {
-    font-size: 1rem;
+  .slide-subtitle {
+    font-size: 1.05rem;
   }
   
-  .hero-buttons {
-    flex-direction: column;
-    align-items: center;
+  .slide-description {
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .homepage {
+    min-height: calc(100vh - 120px);
   }
   
-  .primary-btn, .secondary-btn {
-    width: 100%;
-    max-width: 250px;
+  .carousel-container {
+    height: 35vh;
+    min-height: 250px;
+    max-height: 300px;
   }
+  
+  .slide-overlay {
+    padding: 1.5rem;
+  }
+  
+  .slide-title {
+    font-size: 1.6rem;
+    margin-bottom: 0.6rem;
+  }
+  
+  .slide-subtitle {
+    font-size: 0.95rem;
+    margin-bottom: 0.8rem;
+  }
+  
+  .slide-description {
+    font-size: 0.85rem;
+    margin-bottom: 1.2rem;
+    display: none; /* Hide description on mobile for better spacing */
+  }
+  
+  .slide-cta {
+    padding: 0.7rem 1.6rem;
+    font-size: 0.9rem;
+  }
+  
+  .carousel-arrow {
+    width: 38px;
+    height: 38px;
+    font-size: 1.5rem;
+  }
+  
+  .carousel-arrow-prev {
+    left: 1rem;
+  }
+  
+  .carousel-arrow-next {
+    right: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .carousel-container {
+    height: 30vh;
+    min-height: 220px;
+    max-height: 280px;
+  }
+  
+  .slide-overlay {
+    padding: 1rem;
+  }
+  
+  .slide-content {
+    max-width: 100%;
+  }
+  
+  .slide-title {
+    font-size: 1.3rem;
+    margin-bottom: 0.4rem;
+  }
+  
+  .slide-subtitle {
+    font-size: 0.85rem;
+    margin-bottom: 0.6rem;
+    line-height: 1.4;
+  }
+  
+  .slide-cta {
+    padding: 0.6rem 1.3rem;
+    font-size: 0.8rem;
+  }
+  
+  .carousel-arrow {
+    width: 32px;
+    height: 32px;
+    font-size: 1.2rem;
+  }
+  
+  .carousel-dot {
+    width: 6px;
+    height: 6px;
+  }
+}
+
+/* Content below banner */
+.content-below {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Footer fix - Ensure it sticks to bottom */
+.App {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.main-content {
+  flex: 1;
 }
