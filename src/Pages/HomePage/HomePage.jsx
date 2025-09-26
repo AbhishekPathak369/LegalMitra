@@ -2,8 +2,13 @@
 import React, { useState, useEffect } from 'react';
 import './HomePage.css';
 
+// Import your JSON data (you'll need to place the JSON file in your project)
+import newsData from './newsdatabase.json'; // Adjust the path as needed
+
 const HomePage = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [newsArticles, setNewsArticles] = useState([]);
+  const [loading, setLoading] = useState(true);
   
   const slides = [
     {
@@ -17,7 +22,7 @@ const HomePage = () => {
     },
     {
       id: 2,
-      title: "IPC & CrPC Sections Database",
+      title: "Bharatiya Nyaya Sanhita (BNS)  Sections Database",
       subtitle: "Complete Legal Sections Information",
       description: "Access detailed explanations of Indian Penal Code and Criminal Procedure Code sections with case references and legal interpretations.",
       cta: "Explore Sections",
@@ -44,11 +49,76 @@ const HomePage = () => {
     }
   ];
 
+  // Load news articles from JSON file
+  useEffect(() => {
+    const loadNewsData = () => {
+      try {
+        setLoading(true);
+        
+        // Process the JSON data according to your structure
+        const validArticles = newsData
+          .filter(article => article.title && article.link)
+          .slice(0, 24)
+          .map(article => ({
+            article_id: article.article_id,
+            title: article.title,
+            link: article.link,
+            keywords: article.keywords || [],
+            creator: article.creator || [article.source_name],
+            description: article.description || 'No description available',
+            image_url: article.image_url,
+            pubDate: article.pubDate,
+            source_name: article.source_name,
+            category: article.category || []
+          }));
+        
+        setNewsArticles(validArticles);
+        
+      } catch (err) {
+        console.error('Error loading news data:', err);
+        // Fallback to sample data if JSON loading fails
+        setNewsArticles(getFallbackArticles());
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // Fallback articles function
+    const getFallbackArticles = () => {
+      return [
+        {
+          article_id: "1",
+          title: "Supreme Court Introduces New Guidelines for Bail Applications",
+          link: "https://indianexpress.com/article/india/supreme-court-bail-guidelines-123456/",
+          keywords: ["Bail", "Supreme Court", "Legal"],
+          creator: ["Legal News Network"],
+          description: "The Supreme Court has introduced new procedural guidelines to streamline bail applications across the country.",
+          image_url: "https://images.unsplash.com/photo-1589391886645-d51941baf7fb?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80",
+          source_name: "Legal News",
+          category: ["legal", "judicial"]
+        },
+        {
+          article_id: "2",
+          title: "New Criminal Laws BNS, BNSS to Come into Effect from July 1",
+          link: "https://timesofindia.indiatimes.com/india/new-criminal-laws-bns-bnss-to-come-into-effect-from-july-1/articleshow/123456.cms",
+          keywords: ["BNS", "BNSS", "Criminal Law"],
+          creator: ["Times of India"],
+          description: "The three new criminal laws — Bharatiya Nyaya Sanhita, Bharatiya Nagarik Suraksha Sanhita, and Bharatiya Sakshya Act — will come into effect from July 1.",
+          image_url: "https://images.unsplash.com/photo-1507679799987-c73779587ccf?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80",
+          source_name: "Times of India",
+          category: ["legal", "crime"]
+        }
+      ];
+    };
+
+    loadNewsData();
+  }, []);
+
   // Auto-slide functionality
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % slides.length);
-    }, 5000); // Increased to 5 seconds for better reading
+    }, 5000);
 
     return () => clearInterval(interval);
   }, [slides.length]);
@@ -65,9 +135,27 @@ const HomePage = () => {
     setCurrentSlide(index);
   };
 
+  // Handle card click - open link in new tab
+  const handleCardClick = (link) => {
+    if (link && link.startsWith('http')) {
+      window.open(link, '_blank', 'noopener,noreferrer');
+    }
+  };
+
+  // Format date for display
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-IN', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    });
+  };
+
   return (
     <div className="homepage">
-      {/* Carousel Section */}
+      {/* Carousel Section - UNCHANGED */}
       <section className="carousel-section" aria-label="Website main features">
         <div className="carousel-container">
           <div 
@@ -129,10 +217,89 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* Space for future content below banner */}
-      <div className="content-below">
-        {/* Additional content will go here later */}
-      </div>
+      {/* News Section using JSON data */}
+      <section className="news-section">
+        <div className="news-container">
+          <h2 className="news-section-title">Latest Legal News</h2>
+          
+          {loading && (
+            <div className="news-loading">
+              <div className="loading-spinner"></div>
+              <p>Loading latest legal news...</p>
+            </div>
+          )}
+          
+          {!loading && (
+            <div className="news-grid">
+              {newsArticles.length > 0 ? (
+                newsArticles.map((article) => (
+                  <div 
+                    key={article.article_id}
+                    className="news-card"
+                    onClick={() => handleCardClick(article.link)}
+                    tabIndex={0}
+                    role="button"
+                    aria-label={`Read article: ${article.title}`}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        handleCardClick(article.link);
+                      }
+                    }}
+                  >
+                    <div className="news-image-container">
+                      <img 
+                        src={article.image_url || 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80'} 
+                        alt={article.title}
+                        className="news-image"
+                        onError={(e) => {
+                          e.target.src = 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80';
+                        }}
+                      />
+                      {article.category && article.category.length > 0 && (
+                        <span className="news-category">
+                          {article.category[0]}
+                        </span>
+                      )}
+                    </div>
+                    
+                    <div className="news-content">
+                      {article.keywords && article.keywords.length > 0 && article.keywords[0] && (
+                        <span className="news-keyword">
+                          {typeof article.keywords[0] === 'string' ? article.keywords[0] : 'Legal News'}
+                        </span>
+                      )}
+                      
+                      <h3 className="news-title">{article.title}</h3>
+                      
+                      <div className="news-meta">
+                        <span className="news-source">{article.source_name}</span>
+                        {article.pubDate && (
+                          <span className="news-date">{formatDate(article.pubDate)}</span>
+                        )}
+                      </div>
+                      
+                      <p className="news-creator">
+                        {article.creator && article.creator.length > 0 ? 
+                          (typeof article.creator[0] === 'string' ? article.creator[0] : 'Unknown Author') : 
+                          'Unknown Author'
+                        }
+                      </p>
+                      
+                      <p className="news-description">
+                        {article.description}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="news-empty">
+                  <p>No legal news articles available at the moment.</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </section>
     </div>
   );
 };
