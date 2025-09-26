@@ -1,7 +1,7 @@
 /* src/Pages/HomePage/HomePage.css */
 .homepage {
   width: 100%;
-  min-height: calc(100vh - 140px); /* Ensure footer sticks to bottom */
+  min-height: calc(100vh - 140px);
 }
 
 /* Carousel Styles - RESTORED TO ORIGINAL HEIGHT */
@@ -9,15 +9,15 @@
   width: 100%;
   position: relative;
   overflow: hidden;
-  margin-bottom: 2rem; /* Space for content below */
+  margin-bottom: 2rem;
 }
 
 .carousel-container {
   position: relative;
   width: 100%;
-  height: 60vh; /* RESTORED to original professional height */
-  min-height: 400px; /* RESTORED minimum height */
-  max-height: 600px; /* RESTORED maximum height */
+  height: 60vh;
+  min-height: 400px;
+  max-height: 600px;
 }
 
 .carousel-track {
@@ -54,7 +54,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.4); /* Darker overlay for better text readability */
+  background: rgba(0, 0, 0, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -69,7 +69,7 @@
 }
 
 .slide-title {
-  font-size: 2.8rem; /* Slightly larger for better proportion */
+  font-size: 2.8rem;
   font-weight: 700;
   margin-bottom: 1rem;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
@@ -118,7 +118,6 @@
   box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
 }
 
-/* Navigation Arrows */
 .carousel-arrow {
   position: absolute;
   top: 50%;
@@ -152,7 +151,6 @@
   right: 2rem;
 }
 
-/* Dots Indicator */
 .carousel-dots {
   position: absolute;
   bottom: 1.5rem;
@@ -181,8 +179,6 @@
 .carousel-dot:hover {
   background: rgba(255, 255, 255, 0.5);
 }
-
-/* REST OF THE CSS REMAINS EXACTLY THE SAME AS BEFORE FOR NEWS SECTION */
 
 /* News Section Styles */
 .news-section {
@@ -323,10 +319,7 @@
   border-radius: 4px;
 }
 
-.news-date {
-  font-size: 0.8rem;
-  color: #64748b;
-}
+/* REMOVED: .news-date styles since date is no longer displayed */
 
 .news-creator {
   font-size: 0.875rem;
@@ -419,10 +412,10 @@
   }
 }
 
-/* Responsive Design for Carousel - ADJUSTED FOR TALLER BANNER */
+/* Responsive Design for Carousel */
 @media (max-width: 1024px) {
   .carousel-container {
-    height: 50vh; /* Adjusted for tablet */
+    height: 50vh;
     min-height: 350px;
     max-height: 500px;
   }
@@ -446,7 +439,7 @@
   }
   
   .carousel-container {
-    height: 40vh; /* Adjusted for mobile */
+    height: 40vh;
     min-height: 300px;
     max-height: 400px;
   }
@@ -500,7 +493,7 @@
 
 @media (max-width: 480px) {
   .carousel-container {
-    height: 35vh; /* Adjusted for small mobile */
+    height: 35vh;
     min-height: 250px;
     max-height: 350px;
   }
@@ -562,14 +555,12 @@
   }
 }
 
-/* Content below banner */
 .content-below {
   padding: 2rem;
   max-width: 1200px;
   margin: 0 auto;
 }
 
-/* Footer fix - Ensure it sticks to bottom */
 .App {
   min-height: 100vh;
   display: flex;

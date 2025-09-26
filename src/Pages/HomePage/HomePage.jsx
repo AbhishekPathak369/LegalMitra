@@ -142,17 +142,6 @@ const HomePage = () => {
     }
   };
 
-  // Format date for display
-  const formatDate = (dateString) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-IN', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
-    });
-  };
-
   return (
     <div className="homepage">
       {/* Carousel Section - UNCHANGED */}
@@ -273,9 +262,7 @@ const HomePage = () => {
                       
                       <div className="news-meta">
                         <span className="news-source">{article.source_name}</span>
-                        {article.pubDate && (
-                          <span className="news-date">{formatDate(article.pubDate)}</span>
-                        )}
+                        {/* REMOVED: Date display */}
                       </div>
                       
                       <p className="news-creator">
