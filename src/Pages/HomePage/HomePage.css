@@ -570,3 +570,26 @@
 .main-content {
   flex: 1;
 }
+
+/* SIMPLE FIX - Add this to HomePage.css */
+.homepage {
+  width: 100vw;
+  margin-left: calc(-50vw + 50%);
+  margin-right: calc(-50vw + 50%);
+  position: relative;
+  left: 0;
+  right: 0;
+}
+
+.carousel-section {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  margin-bottom: 2rem
+}
+
+.carousel-container {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}

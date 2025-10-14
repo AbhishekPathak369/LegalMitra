@@ -1,20 +1,20 @@
-/* src/Components/Navbar/Navbar.css */
 .navbar {
+  position: fixed;
+  top: 66px; /* pushes navbar below fixed header (adjust to header height) */
+  left: 0;
+  right: 0;
+  width: 100%;
   background: #1f2937;
   padding: 1rem 0;
-  position: sticky;
-  top: 68px; /* Header height: 1rem padding (16px) + content height (approx 36px) + 1rem padding (16px) = ~68px */
-  z-index: 99; /* Lower than header's z-index: 100 */
-  width: 100%;
+  z-index: 999;
 }
 
 .nav-container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 2rem;
   display: flex;
   justify-content: center;
-  gap: 1rem;
+  /* gap: 1rem; */
   flex-wrap: wrap;
 }
 
@@ -42,7 +42,6 @@
 
 @media (max-width: 768px) {
   .navbar {
-    top: 132px; /* Mobile header height: larger due to column layout */
     padding: 0.8rem 0;
   }
   

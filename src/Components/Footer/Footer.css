@@ -2,8 +2,11 @@
 .footer {
   background: #1f2937;
   color: #d1d5db;
-  padding: 2rem 0;
-  margin-top: auto;
+  padding: 3.1rem 0;
+  /* margin-top: auto; KEEP THIS - it's correct for flexbox */
+  width: 100%;
+  flex-shrink: 0; /* ADD THIS - prevents footer from shrinking */
+  
 }
 
 .footer-container {
@@ -37,3 +40,4 @@
     gap: 0.5rem;
   }
 }
+

@@ -1,11 +1,8 @@
-// src/Pages/HomePage/HomePage.jsx
 import React, { useState, useEffect } from 'react';
 import './HomePage.css';
+import newsData from './newsdatabase.json';
 
-// Import your JSON data (you'll need to place the JSON file in your project)
-import newsData from './newsdatabase.json'; // Adjust the path as needed
-
-const HomePage = () => {
+const HomePage = ({ setCurrentPage }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [newsArticles, setNewsArticles] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -18,16 +15,18 @@ const HomePage = () => {
       description: "Comprehensive legal solutions including bail prediction, lawyer matching, and legal documentation management for all your needs.",
       cta: "Get Started",
       link: "#welcome",
-      background: "linear-gradient(135deg, #2563eb 0%, #1e40af 100%)"
+      background: "linear-gradient(135deg, #2563eb 0%, #1e40af 100%)",
+      page: null // No page change for welcome
     },
     {
       id: 2,
-      title: "Bharatiya Nyaya Sanhita (BNS)  Sections Database",
+      title: "Bharatiya Nyaya Sanhita (BNS) Sections Database",
       subtitle: "Complete Legal Sections Information",
       description: "Access detailed explanations of Indian Penal Code and Criminal Procedure Code sections with case references and legal interpretations.",
       cta: "Explore Sections",
       link: "/sections/info.html",
-      background: "linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)"
+      background: "linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)",
+      page: 'law-sections' // Navigate to law sections page
     },
     {
       id: 3,
@@ -36,7 +35,8 @@ const HomePage = () => {
       description: "Get accurate bail amount predictions using our AI algorithms based on case type, severity, and legal precedents.",
       cta: "Predict Now",
       link: "/sections/predict.html",
-      background: "linear-gradient(135deg, #059669 0%, #047857 100%)"
+      background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
+      page: 'predict-bail' // Navigate to bail prediction page
     },
     {
       id: 4,
@@ -45,17 +45,29 @@ const HomePage = () => {
       description: "Browse our network of verified lawyers specializing in various legal domains with ratings, experience, and client reviews.",
       cta: "Find Lawyers",
       link: "/sections/lawyers.html",
-      background: "linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)"
+      background: "linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)",
+      page: 'find-lawyer' // Navigate to find lawyer page
     }
   ];
 
+  // Handle slide CTA click
+  const handleSlideClick = (slide) => {
+    if (slide.page) {
+      // If the slide has a associated page, navigate to it
+      setCurrentPage(slide.page);
+    } else if (slide.link && slide.link.startsWith('http')) {
+      // If it's an external link, open in new tab
+      window.open(slide.link, '_blank', 'noopener,noreferrer');
+    }
+    // For internal links starting with #, let the default anchor behavior handle it
+  };
+
   // Load news articles from JSON file
   useEffect(() => {
+    // ... existing news loading code remains exactly the same ...
     const loadNewsData = () => {
       try {
         setLoading(true);
-        
-        // Process the JSON data according to your structure
         const validArticles = newsData
           .filter(article => article.title && article.link)
           .slice(0, 24)
@@ -73,17 +85,14 @@ const HomePage = () => {
           }));
         
         setNewsArticles(validArticles);
-        
       } catch (err) {
         console.error('Error loading news data:', err);
-        // Fallback to sample data if JSON loading fails
         setNewsArticles(getFallbackArticles());
       } finally {
         setLoading(false);
       }
     };
 
-    // Fallback articles function
     const getFallbackArticles = () => {
       return [
         {
@@ -135,7 +144,7 @@ const HomePage = () => {
     setCurrentSlide(index);
   };
 
-  // Handle card click - open link in new tab
+  // Handle news card click
   const handleCardClick = (link) => {
     if (link && link.startsWith('http')) {
       window.open(link, '_blank', 'noopener,noreferrer');
@@ -144,7 +153,7 @@ const HomePage = () => {
 
   return (
     <div className="homepage">
-      {/* Carousel Section - UNCHANGED */}
+      {/* Carousel Section */}
       <section className="carousel-section" aria-label="Website main features">
         <div className="carousel-container">
           <div 
@@ -157,7 +166,7 @@ const HomePage = () => {
                 className={`carousel-slide ${index === currentSlide ? 'active' : ''}`}
                 aria-hidden={index !== currentSlide}
               >
-                <a href={slide.link} className="slide-link">
+                <div className="slide-link" onClick={() => handleSlideClick(slide)}>
                   <div 
                     className="slide-background"
                     style={{ background: slide.background }}
@@ -167,11 +176,19 @@ const HomePage = () => {
                         <h2 className="slide-title">{slide.title}</h2>
                         <p className="slide-subtitle">{slide.subtitle}</p>
                         <p className="slide-description">{slide.description}</p>
-                        <button className="slide-cta">{slide.cta}</button>
+                        <button 
+                          className="slide-cta"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSlideClick(slide);
+                          }}
+                        >
+                          {slide.cta}
+                        </button>
                       </div>
                     </div>
                   </div>
-                </a>
+                </div>
               </div>
             ))}
           </div>
@@ -206,7 +223,7 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* News Section using JSON data */}
+      {/* News Section - REMAINS EXACTLY THE SAME */}
       <section className="news-section">
         <div className="news-container">
           <h2 className="news-section-title">Latest Legal News</h2>
@@ -262,7 +279,6 @@ const HomePage = () => {
                       
                       <div className="news-meta">
                         <span className="news-source">{article.source_name}</span>
-                        {/* REMOVED: Date display */}
                       </div>
                       
                       <p className="news-creator">

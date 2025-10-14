@@ -1,8 +1,10 @@
-// src/Components/Navbar/Navbar.jsx
 import React from 'react';
+import { useAuth } from '../../context/AuthContext';
 import './Navbar.css';
 
 const Navbar = ({ currentPage, setCurrentPage }) => {
+  const { user } = useAuth();
+
   const navItems = [
     { id: 'home', label: 'Home' },
     { id: 'law-sections', label: 'Law Sections Info' },
@@ -13,6 +15,14 @@ const Navbar = ({ currentPage, setCurrentPage }) => {
     { id: 'about', label: 'About Us' }
   ];
 
+  const handleMyCollectionClick = () => {
+    if (!user) {
+      setCurrentPage('login');
+    } else {
+      setCurrentPage('my-collection');
+    }
+  };
+
   return (
     <nav className="navbar">
       <div className="nav-container">
@@ -20,7 +30,7 @@ const Navbar = ({ currentPage, setCurrentPage }) => {
           <button
             key={item.id}
             className={`nav-link ${currentPage === item.id ? 'active' : ''}`}
-            onClick={() => setCurrentPage(item.id)}
+            onClick={item.id === 'my-collection' ? handleMyCollectionClick : () => setCurrentPage(item.id)}
           >
             {item.label}
           </button>
