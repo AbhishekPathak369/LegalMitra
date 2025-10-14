@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import './login.css';
-
+import logo from '../../assets/logo.png';
 const Login = ({ setCurrentPage }) => {
   const [formData, setFormData] = useState({
     email: '',
@@ -91,6 +91,7 @@ const Login = ({ setCurrentPage }) => {
       <div className="login-card">
         <div className="login-welcome">
           <div className="welcome-content">
+          <img src={logo} height={100} width={100}></img>
             <h1>Welcome Back</h1>
             <p>Sign in to continue your legal journey with LegalMitra</p>
             <div className="benefits">
