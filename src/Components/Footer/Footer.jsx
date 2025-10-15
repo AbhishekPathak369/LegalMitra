@@ -42,7 +42,7 @@ const Footer = () => {
               <a href="tel:+917017331435" className="contact-link">
                 📱 +91-7017331435
               </a>
-              <a href="tel:+919876543210" className="contact-link">
+              <a href="tel:+919267918534" className="contact-link">
                 📱 +91-9267918534
               </a>
             </div>
