@@ -33,8 +33,8 @@ const Footer = () => {
           <div className="footer-column">
             <h4>Contact Info</h4>
             <div className="contact-info">
-              <a href="mailto:pathakansh290@gmail.com" className="contact-link">
-                📧 pathakansh290@gmail.com
+              <a href="mailto:pathakabhi290@gmail.com" className="contact-link">
+                📧 pathakabhi290@gmail.com
               </a>
               <a href="mailto:anuragmishra5433@gmail.com" className="contact-link">
                 📧 anuragmishra5433@gmail.com
