@@ -1102,15 +1102,31 @@ const initiatePayment = async (caseData) => {
           </div>
           
           <div className="form-group">
-            <label style={{ display: 'flex', alignItems: 'flex-start', cursor: 'pointer' }}>
-              <input 
-                type="checkbox" 
-                style={{ marginRight: '10px', marginTop: '3px' }}
-                required
-              />
-              <span>I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a></span>
-            </label>
-          </div>
+  <label style={{ 
+    display: 'flex', 
+    alignItems: 'flex-start', 
+    cursor: 'pointer',
+    gap: '8px',
+    fontSize: '14px',
+    lineHeight: '1.4'
+  }}>
+    <input 
+      type="checkbox" 
+      style={{ 
+        display: 'inline-block',
+        width: '16px',
+        height: '16px',
+        minWidth: '16px',
+        marginTop: '2px',
+        cursor: 'pointer'
+      }}
+      required
+    />
+    <span style={{ flex: 1 }}>
+      I agree to the <a href="#" style={{ color: '#3399cc', textDecoration: 'none' }}>Terms of Service</a> and <a href="#" style={{ color: '#3399cc', textDecoration: 'none' }}>Privacy Policy</a>
+    </span>
+  </label>
+</div>
           
           <button 
             className="btn btn-primary"
