@@ -9,18 +9,24 @@ const MyCollection = () => {
   const [expandedCase, setExpandedCase] = useState(null);
   const [caseNotes, setCaseNotes] = useState({});
   const [isLoading, setIsLoading] = useState(false);
-  
-  // NEW: State for showing solved cases
+  const [hasPaid, setHasPaid] = useState(() => {
+    // Check localStorage first for payment status
+    const savedPaymentStatus = localStorage.getItem('userHasPaid');
+    return savedPaymentStatus === 'true';
+  });
+  const [checkingPayment, setCheckingPayment] = useState(true);
   const [showSolvedCases, setShowSolvedCases] = useState(false);
-  
-  // NEW: State for client to add their case
   const [showClientCaseForm, setShowClientCaseForm] = useState(false);
-  
+  const [showPayment, setShowPayment] = useState(false);
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [caseDataBeforePayment, setCaseDataBeforePayment] = useState(null);
   const [lawyerCases, setLawyerCases] = useState([]);
   const [clientCases, setClientCases] = useState([]);
-  const [studentCases, setStudentCases] = useState([]);
-
-  // NEW: State for client case form
+const [showProfileCard, setShowProfileCard] = useState(false);
+// In your existing state declarations, add these:
+const [callLogs, setCallLogs] = useState({});
+const [showCallModal, setShowCallModal] = useState(false);
+const [selectedCaseForCall, setSelectedCaseForCall] = useState(null);
   const [newClientCase, setNewClientCase] = useState({
     caseName: '',
     caseType: '',
@@ -54,20 +60,73 @@ const MyCollection = () => {
     status: 'ongoing'
   });
 
-  // Fetch cases from MongoDB
+  // Check payment status for lawyers - FIXED VERSION
   useEffect(() => {
-    if (user?.role === 'lawyer') {
-      fetchLawyerCases();
-    } else if (user?.role === 'client') {
-      fetchClientCases();
-    }
-  }, [user]);
+    const initializeData = async () => {
+      if (user) {
+        console.log('🔄 Initializing data for user:', user.role);
+        
+        if (user.role === 'lawyer') {
+          await checkPaymentStatus();
+          await fetchLawyerCases(); // CALL BOTH FUNCTIONS
+        } else if (user.role === 'client') {
+          await fetchClientCases();
+          setCheckingPayment(false);
+        }
+      }
+    };
 
+    initializeData();
+  }, [user]); // Only depend on user
+
+
+  const checkPaymentStatus = async () => {
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.error('❌ No token found');
+      setCheckingPayment(false);
+      return;
+    }
+
+    console.log('🔍 Checking payment status from server...');
+    const response = await fetch('http://localhost:5000/api/payment/payment-status', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    console.log('📡 Payment status response status:', response.status);
+    
+    const data = await response.json();
+    console.log('💰 Payment status data:', data);
+    
+    if (response.ok) {
+      // ✅ SYNC localStorage with server state
+      setHasPaid(data.hasPaid);
+      localStorage.setItem('userHasPaid', data.hasPaid.toString());
+      console.log('✅ Payment status updated to:', data.hasPaid, '(localStorage synced)');
+    } else {
+      console.error('❌ Failed to check payment status:', data.error);
+      setHasPaid(false);
+      localStorage.setItem('userHasPaid', 'false'); // ✅ Sync on error too
+    }
+  } catch (error) {
+    console.error('💥 Error checking payment status:', error);
+    setHasPaid(false);
+    localStorage.setItem('userHasPaid', 'false'); // ✅ Sync on error too
+  } finally {
+    setCheckingPayment(false);
+  }
+};
   const fetchLawyerCases = async () => {
     try {
       setIsLoading(true);
       const token = localStorage.getItem('token');
       
+      console.log('🔍 Fetching lawyer cases...');
       const response = await fetch('http://localhost:5000/api/cases/my-cases', {
         method: 'GET',
         headers: {
@@ -77,27 +136,110 @@ const MyCollection = () => {
       });
 
       const data = await response.json();
+      console.log('📦 Lawyer cases response:', data);
 
       if (response.ok) {
         setLawyerCases(data.cases || []);
+        console.log('✅ Lawyer cases loaded:', data.cases?.length || 0);
       } else {
-        console.error('Failed to fetch cases:', data.error);
+        console.error('❌ Failed to fetch cases:', data.error);
         setLawyerCases([]);
       }
     } catch (error) {
-      console.error('Error fetching cases:', error);
+      console.error('💥 Error fetching cases:', error);
       setLawyerCases([]);
     } finally {
       setIsLoading(false);
     }
   };
+// Call client directly
+const callClient = (caseItem) => {
+  const phoneNumber = caseItem.clientPhone;
+  
+  if (!phoneNumber) {
+    alert('❌ No phone number available for this client');
+    return;
+  }
 
-  // NEW: Fetch client cases
-  const fetchClientCases = async () => {
+  // Format phone number
+  const formattedNumber = phoneNumber.replace(/\D/g, '');
+  
+  // Create call log
+  const callLog = {
+    caseId: caseItem._id,
+    clientName: caseItem.clientName,
+    phoneNumber: formattedNumber,
+    timestamp: new Date().toISOString(),
+    type: 'outgoing'
+  };
+
+  // Save call log
+  saveCallLog(callLog);
+  
+  // Open phone app
+  window.open(`tel:${formattedNumber}`, '_self');
+};
+
+// Open call options modal
+const openCallOptions = (caseItem) => {
+  setSelectedCaseForCall(caseItem);
+  setShowCallModal(true);
+};
+
+// Send SMS to client
+const sendSMS = (caseItem) => {
+  const phoneNumber = caseItem.clientPhone;
+  
+  if (!phoneNumber) {
+    alert('❌ No phone number available for this client');
+    return;
+  }
+
+  const formattedNumber = phoneNumber.replace(/\D/g, '');
+  const message = `Hello ${caseItem.clientName}, this is ${user?.name} from LegalMitra regarding your case: ${caseItem.caseName}.`;
+  
+  // Create call log for SMS
+  const callLog = {
+    caseId: caseItem._id,
+    clientName: caseItem.clientName,
+    phoneNumber: formattedNumber,
+    timestamp: new Date().toISOString(),
+    type: 'sms'
+  };
+
+  // Save call log
+  saveCallLog(callLog);
+  
+  // Open SMS app
+  window.open(`sms:${formattedNumber}?body=${encodeURIComponent(message)}`, '_self');
+};
+
+// Save call log to localStorage
+const saveCallLog = (callLog) => {
+  const existingLogs = JSON.parse(localStorage.getItem('callLogs') || '{}');
+  const caseLogs = existingLogs[callLog.caseId] || [];
+  
+  const updatedLogs = {
+    ...existingLogs,
+    [callLog.caseId]: [...caseLogs, callLog]
+  };
+  
+  localStorage.setItem('callLogs', JSON.stringify(updatedLogs));
+  setCallLogs(updatedLogs);
+};
+
+// Get call logs for a case
+const getCallLogs = (caseId) => {
+  const allLogs = JSON.parse(localStorage.getItem('callLogs') || '{}');
+  return allLogs[caseId] || [];
+};
+
+   const fetchClientCases = async () => {
     try {
       setIsLoading(true);
       const token = localStorage.getItem('token');
       
+      console.log('🔍 Fetching client cases...');
       const response = await fetch('http://localhost:5000/api/cases/my-cases', {
         method: 'GET',
         headers: {
@@ -107,39 +249,585 @@ const MyCollection = () => {
       });
 
       const data = await response.json();
+      console.log('📦 Client cases response:', data);
 
       if (response.ok) {
         setClientCases(data.cases || []);
+        console.log('✅ Client cases loaded:', data.cases?.length || 0);
       } else {
-        console.error('Failed to fetch cases:', data.error);
+        console.error('❌ Failed to fetch cases:', data.error);
         setClientCases([]);
       }
     } catch (error) {
-      console.error('Error fetching cases:', error);
+      console.error('💥 Error fetching cases:', error);
       setClientCases([]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // NEW: Function to handle client case input changes
-  const handleClientCaseInputChange = (e) => {
-    const { name, value } = e.target;
-    setNewClientCase(prevState => ({
-      ...prevState,
-      [name]: value
-    }));
+  // Payment Functions - UPDATED with better status handling
+  const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+  const downloadProfileAsPNG = async () => {
+  try {
+    const html2canvas = (await import('html2canvas')).default;
+    const cardElement = document.getElementById('lawyerProfileCard');
+    
+    if (cardElement) {
+      const canvas = await html2canvas(cardElement, {
+        backgroundColor: '#0f172a',
+        scale: 2,
+        useCORS: true,
+        allowTaint: true
+      });
+      
+      const link = document.createElement('a');
+      link.download = `${user?.name || 'lawyer'}-profile-card.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      
+      alert('✅ Profile card downloaded as PNG!');
+    }
+  } catch (error) {
+    console.error('Error downloading PNG:', error);
+    alert('❌ Failed to download PNG. Please try again.');
+  }
+};
+
+const downloadProfileAsPDF = async () => {
+  try {
+    const html2canvas = (await import('html2canvas')).default;
+    const jsPDF = (await import('jspdf')).default;
+    
+    const cardElement = document.getElementById('lawyerProfileCard');
+    
+    if (cardElement) {
+      const canvas = await html2canvas(cardElement, {
+        backgroundColor: '#0f172a',
+        scale: 2,
+        useCORS: true,
+        allowTaint: true
+      });
+      
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgWidth = 190;
+      const pageHeight = 280;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 10;
+
+      pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      pdf.save(`${user?.name || 'lawyer'}-profile-card.pdf`);
+      alert('✅ Profile card downloaded as PDF!');
+    }
+  } catch (error) {
+    console.error('Error downloading PDF:', error);
+    alert('❌ Failed to download PDF. Please try again.');
+  }
+};
+const renderCallModal = () => {
+  if (!selectedCaseForCall) return null;
+
+  return (
+    <div className="call-modal-overlay">
+      <div className="call-modal">
+        <div className="call-modal-header">
+          <h3>Contact Client</h3>
+          <button 
+            className="close-btn"
+            onClick={() => setShowCallModal(false)}
+          >
+            ✕
+          </button>
+        </div>
+
+        <div className="call-client-info">
+          <div className="client-avatar">
+            {selectedCaseForCall.clientName?.charAt(0) || 'C'}
+          </div>
+          <div className="client-details">
+            <h4>{selectedCaseForCall.clientName}</h4>
+            <p className="client-case">{selectedCaseForCall.caseName}</p>
+            <p className="client-phone">
+              📞 {selectedCaseForCall.clientPhone || 'No phone number'}
+            </p>
+          </div>
+        </div>
+
+        <div className="call-options">
+          <button 
+            className="call-option-btn call"
+            onClick={() => {
+              callClient(selectedCaseForCall);
+              setShowCallModal(false);
+            }}
+            disabled={!selectedCaseForCall.clientPhone}
+          >
+            <span className="call-icon">📞</span>
+            <span>Call Now</span>
+          </button>
+
+          <button 
+            className="call-option-btn sms"
+            onClick={() => {
+              sendSMS(selectedCaseForCall);
+              setShowCallModal(false);
+            }}
+            disabled={!selectedCaseForCall.clientPhone}
+          >
+            <span className="call-icon">💬</span>
+            <span>Send SMS</span>
+          </button>
+        </div>
+
+        {/* Call History */}
+        <div className="call-history">
+          <h4>Recent Communications</h4>
+          {getCallLogs(selectedCaseForCall._id).length > 0 ? (
+            <div className="call-log-list">
+              {getCallLogs(selectedCaseForCall._id)
+                .slice(-3)
+                .reverse()
+                .map((log, index) => (
+                <div key={index} className="call-log-item">
+                  <span className={`log-type ${log.type}`}>
+                    {log.type === 'outgoing' ? '📞' : '💬'}
+                  </span>
+                  <span className="log-time">
+                    {new Date(log.timestamp).toLocaleString()}
+                  </span>
+                  <span className="log-duration">{log.type}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="no-calls">No recent communications</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
+
+const copyProfileShareableLink = async () => {
+  try {
+    const profileText = `
+👨‍⚖️ ${user?.name || 'Lawyer Name'}
+📊 ${roleData.stats.total} Total Cases | ${roleData.stats.solved} Solved | ${Math.round((roleData.stats.solved / roleData.stats.total) * 100) || 0}% Success Rate
+⚖️ Specialized in Criminal, Family & Corporate Law
+📧 ${user?.email || 'Contact for details'}
+
+Generated via LegalMitra Case Management System
+    `.trim();
+
+    await navigator.clipboard.writeText(profileText);
+    alert('✅ Profile information copied to clipboard! Share this with your clients.');
+  } catch (error) {
+    console.error('Error copying to clipboard:', error);
+    const textArea = document.createElement('textarea');
+    textArea.value = `Lawyer: ${user?.name}\nCases: ${roleData.stats.total}\nSuccess Rate: ${Math.round((roleData.stats.solved / roleData.stats.total) * 100) || 0}%\nContact: ${user?.email}`;
+    document.body.appendChild(textArea);
+    textArea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textArea);
+    alert('✅ Profile information copied to clipboard!');
+  }
+};
+  const renderProfileCardModal = () => (
+  <div className="profile-card-overlay">
+    <div className="profile-card-modal">
+      <div className="profile-card-header">
+        <h3>Your Professional Profile Card</h3>
+        <button 
+          className="close-btn"
+          onClick={() => setShowProfileCard(false)}
+        >
+          ✕
+        </button>
+      </div>
+      
+      <div className="profile-card-content">
+        {/* Profile Card Preview */}
+        <div className="lawyer-profile-card" id="lawyerProfileCard">
+          <div className="profile-header">
+            <div className="profile-avatar">
+              {user?.name?.charAt(0) || 'L'}
+            </div>
+            <div className="profile-info">
+              <h2>{user?.name || 'Lawyer Name'}</h2>
+              <p className="profile-title">Senior Legal Counsel</p>
+              <div className="rating">
+                <span className="stars">⭐⭐⭐⭐⭐</span>
+                <span className="rating-text">4.8 (120 reviews)</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="profile-stats">
+            <h4>📊 Case Statistics</h4>
+            <div className="stats-grid">
+              <div className="stat-item">
+                <span className="stat-number">{roleData.stats.total}</span>
+                <span className="stat-label">Total Cases</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-number">{roleData.stats.solved}</span>
+                <span className="stat-label">Solved</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-number">{roleData.stats.ongoing}</span>
+                <span className="stat-label">Ongoing</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-number">
+                  {roleData.stats.total > 0 
+                    ? Math.round((roleData.stats.solved / roleData.stats.total) * 100) 
+                    : 0}%
+                </span>
+                <span className="stat-label">Success Rate</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="specializations">
+            <h4>⚖️ Specializations</h4>
+            <div className="specialization-list">
+              <div className="specialization-item">
+                <span>Criminal Law</span>
+                <span className="stars">⭐⭐⭐⭐⭐</span>
+              </div>
+              <div className="specialization-item">
+                <span>Family Law</span>
+                <span className="stars">⭐⭐⭐⭐☆</span>
+              </div>
+              <div className="specialization-item">
+                <span>Corporate Law</span>
+                <span className="stars">⭐⭐⭐⭐☆</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="contact-info">
+            <h4>📞 Contact</h4>
+            <div className="contact-item" style={{backgroundColor:'rgba(100, 116, 139, 0.1)'}}>
+              <span className="contact-icon">📧</span>
+              <span>{user?.email || 'email@example.com'}</span>
+            </div>
+            <div className="contact-item" style={{backgroundColor:'rgba(100, 116, 139, 0.1)'}}>
+              <span className="contact-icon">📱</span>
+              <span>+1 (555) 123-4567</span>
+            </div>
+            <div className="contact-item" style={{backgroundColor:'rgba(100, 116, 139, 0.1)'}} >
+              <span className="contact-icon">🏢</span>
+              <span>Supreme Court Bar Member</span>
+            </div>
+          </div>
+
+          <div className="profile-footer">
+            <div className="qr-code">
+              <div className="qr-placeholder">QR Code</div>
+              <span>Scan to contact</span>
+            </div>
+            <div className="signature">
+              <div className="signature-line"></div>
+              <span>Digital Signature</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Download Options */}
+        <div className="download-options">
+  <button className="download-btn primary" onClick={downloadProfileAsPNG}>
+    <span className="btn-icon">📥</span>
+    Download as PNG
+  </button>
+  <button className="download-btn secondary" onClick={downloadProfileAsPDF}>
+    <span className="btn-icon">📄</span>
+    Download as PDF
+  </button>
+  <button className="download-btn tertiary" onClick={copyProfileShareableLink}>
+    <span className="btn-icon">🔗</span>
+    Copy Shareable Link
+  </button>
+</div>
+
+        <div className="profile-card-note">
+          <p>💡 <strong>Pro Tip:</strong> Share this card with potential clients to showcase your expertise and build trust!</p>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+  const createRazorpayOrder = async (amount) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:5000/api/payment/create-order', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ amount: amount })
+      });
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error creating Razorpay order:', error);
+      return { success: false, error: 'Failed to create payment order' };
+    }
   };
 
-  // NEW: Function to submit client case - FIXED VERSION
+   const verifyPayment = async (paymentData) => {
+  try {
+    const token = localStorage.getItem('token');
+    console.log('🔍 Verifying payment...');
+    
+    const response = await fetch('http://localhost:5000/api/payment/verify-payment', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(paymentData)
+    });
+
+    const data = await response.json();
+    console.log('💰 Payment verification response:', data);
+
+    if (data.success) {
+      // ✅ IMMEDIATELY update localStorage and state
+      setHasPaid(true);
+      localStorage.setItem('userHasPaid', 'true');
+      console.log('✅ Payment verified - localStorage updated');
+      
+      // Also re-check from server for final confirmation
+      await checkPaymentStatus();
+      return data;
+    } else {
+      return data;
+    }
+  } catch (error) {
+    console.error('💥 Error verifying payment:', error);
+    return { success: false, error: 'Payment verification failed' };
+  }
+};
+const initiatePayment = async (caseData) => {
+    try {
+      setPaymentLoading(true);
+      
+      const scriptLoaded = await loadRazorpayScript();
+      if (!scriptLoaded) {
+        alert('Razorpay SDK failed to load. Please check your internet connection.');
+        return;
+      }
+
+      const orderResponse = await createRazorpayOrder(500);
+      if (!orderResponse.success) {
+        alert('Failed to create payment order. Please try again.');
+        return;
+      }
+
+      const razorpayKey = 'rzp_test_RTOZnKCegnEMZB';
+      
+      const options = {
+        key: razorpayKey,
+        amount: orderResponse.order.amount,
+        currency: orderResponse.order.currency,
+        name: 'LegalMitra Case Management',
+        description: 'One-Time Case Registration Fee',
+        order_id: orderResponse.order.id,
+        handler: async function (response) {
+          console.log('🎯 Payment handler called:', response);
+          
+          const verificationResponse = await verifyPayment({
+            razorpay_order_id: response.razorpay_order_id,
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_signature: response.razorpay_signature
+          });
+
+          if (verificationResponse.success) {
+            // Payment verified and status updated in MongoDB
+            // Now submit the case
+            await submitCaseAfterPayment(caseData, verificationResponse.paymentId, response.razorpay_order_id);
+          } else {
+            alert('Payment verification failed. Please contact support.');
+          }
+        },
+        prefill: {
+          name: user?.name || '',
+          email: user?.email || '',
+          contact: user?.phone || ''
+        },
+        notes: {
+          case_name: caseData.caseName,
+          user_id: user?._id
+        },
+        theme: {
+          color: '#3399cc'
+        }
+      };
+
+      const rzp = new window.Razorpay(options);
+      
+      rzp.on('payment.failed', function (response) {
+        console.error('❌ Payment failed:', response.error);
+        alert(`Payment failed: ${response.error.description}`);
+        setPaymentLoading(false);
+      });
+
+      rzp.open();
+      
+    } catch (error) {
+      console.error('💥 Error in initiatePayment:', error);
+      alert('Error initiating payment. Please try again.');
+    } finally {
+      setPaymentLoading(false);
+    }
+  };
+
+  const submitCaseAfterPayment = async (caseData, paymentId, razorpayOrderId) => {
+    try {
+      setIsLoading(true);
+      const token = localStorage.getItem('token');
+      
+      const caseSubmissionData = {
+        caseData: {
+          clientName: caseData.clientName,
+          clientEmail: caseData.clientEmail,
+          clientPhone: caseData.clientPhone,
+          clientAddress: caseData.clientAddress,
+          caseName: caseData.caseName,
+          caseType: caseData.caseType,
+          caseNumber: caseData.caseNumber,
+          courtName: caseData.courtName,
+          filingDate: caseData.filingDate,
+          nextHearing: caseData.nextHearing,
+          caseValue: caseData.caseValue,
+          opponentName: caseData.opponentName,
+          opponentLawyer: caseData.opponentLawyer,
+          description: caseData.description,
+          priority: caseData.priority,
+          status: caseData.status
+        },
+        paymentId: paymentId,
+        razorpayOrderId: razorpayOrderId
+      };
+
+      const response = await fetch('http://localhost:5000/api/cases/create-after-payment', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(caseSubmissionData)
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setLawyerCases(prev => [data.case, ...prev]);
+        setNewCase({
+          clientName: '', clientEmail: '', clientPhone: '', clientAddress: '',
+          caseName: '', caseType: '', caseNumber: '', courtName: '',
+          filingDate: '', nextHearing: '', caseValue: '',
+          opponentName: '', opponentLawyer: '', description: '',
+          priority: 'medium', status: 'ongoing'
+        });
+        setShowForm(false);
+        setShowPayment(false);
+        setCaseDataBeforePayment(null);
+        alert('✅ Case created successfully! Payment verified.');
+      } else {
+        alert('Failed to create case after payment: ' + (data.error || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Network error:', error);
+      alert('Network error creating case after payment.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const submitCaseDirectly = async (caseData) => {
+  try {
+    setIsLoading(true);
+    const token = localStorage.getItem('token');
+    
+    console.log('📤 Submitting case directly...');
+    const response = await fetch('http://localhost:5000/api/cases/create', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(caseData)
+    });
+
+    const data = await response.json();
+    console.log('📄 Direct case submission response:', data);
+
+    if (response.ok) {
+      setLawyerCases(prev => [data.case, ...prev]);
+      setNewCase({
+        clientName: '', clientEmail: '', clientPhone: '', clientAddress: '',
+        caseName: '', caseType: '', caseNumber: '', courtName: '',
+        filingDate: '', nextHearing: '', caseValue: '',
+        opponentName: '', opponentLawyer: '', description: '',
+        priority: 'medium', status: 'ongoing'
+      });
+      setShowForm(false);
+      alert('Case created successfully!');
+    } else {
+      // If payment required error, show payment screen
+      if (response.status === 402) {
+        console.log('💰 Payment required, showing payment screen');
+        alert('Payment required. Please complete the one-time payment.');
+        setCaseDataBeforePayment(caseData);
+        setShowPayment(true);
+        // ✅ Sync localStorage to reflect payment requirement
+        setHasPaid(false);
+        localStorage.setItem('userHasPaid', 'false');
+      } else {
+        alert('Failed to create case: ' + (data.error || 'Unknown error'));
+      }
+    }
+  } catch (error) {
+    console.error('💥 Error creating case:', error);
+    alert('Error creating case. Please check if server is running.');
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+
   const handleSubmitClientCase = async (e) => {
     e.preventDefault();
     
     try {
       setIsLoading(true);
       const token = localStorage.getItem('token');
-      
-      console.log("Submitting client case:", newClientCase);
       
       const response = await fetch('http://localhost:5000/api/cases/client/create', {
         method: 'POST',
@@ -151,28 +839,15 @@ const MyCollection = () => {
       });
 
       const data = await response.json();
-      console.log("Server response:", data);
 
       if (response.ok) {
-        // Add the new case to the state
         setClientCases(prev => [data.case, ...prev]);
-        
-        // Reset form
         setNewClientCase({
-          caseName: '',
-          caseType: '',
-          caseNumber: '',
-          courtName: '',
-          filingDate: '',
-          nextHearing: '',
-          caseDescription: '',
-          lawyerName: '',
-          lawyerEmail: '',
-          lawyerPhone: '',
-          status: 'ongoing'
+          caseName: '', caseType: '', caseNumber: '', courtName: '',
+          filingDate: '', nextHearing: '', caseDescription: '',
+          lawyerName: '', lawyerEmail: '', lawyerPhone: '', status: 'ongoing'
         });
         setShowClientCaseForm(false);
-        
         alert('Case added successfully!');
       } else {
         alert('Failed to add case: ' + (data.error || 'Unknown error'));
@@ -185,102 +860,6 @@ const MyCollection = () => {
     }
   };
 
-  // NEW: Function to update client case status
-  const updateClientCaseStatus = async (caseId, newStatus) => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/cases/${caseId}/status`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ status: newStatus })
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        // Update local state
-        setClientCases(prev => prev.map(caseItem => 
-          caseItem._id === caseId 
-            ? { ...caseItem, status: newStatus }
-            : caseItem
-        ));
-      } else {
-        console.error('Failed to update status:', data.error);
-      }
-    } catch (error) {
-      console.error('Error updating case status:', error);
-    }
-  };
-
-  // Role-based data and stats
-  const getRoleData = () => {
-    switch(user?.role) {
-      case 'lawyer':
-        const ongoing = lawyerCases.filter(c => c.status === 'ongoing').length;
-        const solved = lawyerCases.filter(c => c.status === 'solved').length;
-        const highPriority = lawyerCases.filter(c => c.priority === 'high').length;
-        const totalValue = lawyerCases.reduce((sum, c) => {
-          const value = parseInt(c.caseValue?.replace(/[^0-9]/g, '')) || 0;
-          return sum + value;
-        }, 0);
-        
-        return {
-          cases: lawyerCases,
-          setCases: setLawyerCases,
-          stats: { ongoing, solved, highPriority, total: lawyerCases.length, totalValue },
-          title: 'Lawyer Dashboard',
-          showAddCase: true,
-          welcomeMessage: `Welcome back, ${user?.name}!`,
-          type: 'lawyer'
-        };
-
-      case 'client':
-        const clientOngoing = clientCases.filter(c => c.status === 'ongoing').length;
-        const clientSolved = clientCases.filter(c => c.status === 'solved').length;
-        
-        return {
-          cases: clientCases,
-          setCases: setClientCases,
-          stats: { ongoing: clientOngoing, solved: clientSolved, total: clientCases.length },
-          title: 'My Legal Cases',
-          showAddCase: true,
-          welcomeMessage: `Hello ${user?.name}, track your legal matters here.`,
-          type: 'client'
-        };
-
-      case 'student':
-        const saved = studentCases.filter(c => c.status === 'saved').length;
-        const studying = studentCases.filter(c => c.status === 'studying').length;
-        const completed = 5;
-        
-        return {
-          cases: studentCases,
-          setCases: setStudentCases,
-          stats: { saved, studying, completed, total: studentCases.length },
-          title: 'Study Dashboard',
-          showAddCase: false,
-          welcomeMessage: `Welcome ${user?.name}, continue your legal studies.`,
-          type: 'student'
-        };
-
-      default:
-        return {
-          cases: [],
-          setCases: () => {},
-          stats: { ongoing: 0, solved: 0, total: 0 },
-          title: 'My Collection',
-          showAddCase: false,
-          welcomeMessage: 'Welcome to LegalMitra',
-          type: 'default'
-        };
-    }
-  };
-
-  const roleData = getRoleData();
-
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setNewCase(prevState => ({
@@ -289,58 +868,22 @@ const MyCollection = () => {
     }));
   };
 
+  const handleClientCaseInputChange = (e) => {
+    const { name, value } = e.target;
+    setNewClientCase(prevState => ({
+      ...prevState,
+      [name]: value
+    }));
+  };
+
   const handleSubmitCase = async (e) => {
     e.preventDefault();
     
-    try {
-      setIsLoading(true);
-      const token = localStorage.getItem('token');
-      
-      const response = await fetch('http://localhost:5000/api/cases/create', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(newCase)
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        // Add the new case to the state
-        setLawyerCases(prev => [data.case, ...prev]);
-        
-        // Reset form
-        setNewCase({
-          clientName: '',
-          clientEmail: '',
-          clientPhone: '',
-          clientAddress: '',
-          caseName: '',
-          caseType: '',
-          caseNumber: '',
-          courtName: '',
-          filingDate: '',
-          nextHearing: '',
-          caseValue: '',
-          opponentName: '',
-          opponentLawyer: '',
-          description: '',
-          priority: 'medium',
-          status: 'ongoing'
-        });
-        setShowForm(false);
-        
-        alert('Case created successfully!');
-      } else {
-        alert('Failed to create case: ' + (data.error || 'Unknown error'));
-      }
-    } catch (error) {
-      console.error('Error creating case:', error);
-      alert('Error creating case. Please check if server is running.');
-    } finally {
-      setIsLoading(false);
+    if (user?.role === 'lawyer' && !hasPaid) {
+      setCaseDataBeforePayment({ ...newCase });
+      setShowPayment(true);
+    } else {
+      await submitCaseDirectly(newCase);
     }
   };
 
@@ -349,10 +892,8 @@ const MyCollection = () => {
   };
 
   const handleNoteChange = async (caseId, notes) => {
-    // Update local state immediately
     setCaseNotes(prev => ({ ...prev, [caseId]: notes }));
 
-    // Save to MongoDB
     try {
       const token = localStorage.getItem('token');
       await fetch(`http://localhost:5000/api/cases/${caseId}/notes`, {
@@ -383,21 +924,226 @@ const MyCollection = () => {
       const data = await response.json();
 
       if (response.ok) {
-        // Update local state
         setLawyerCases(prev => prev.map(caseItem => 
           caseItem._id === caseId 
             ? { ...caseItem, status: newStatus }
             : caseItem
         ));
-      } else {
-        console.error('Failed to update status:', data.error);
       }
     } catch (error) {
       console.error('Error updating case status:', error);
     }
   };
 
-  // Render Welcome Section
+  const updateClientCaseStatus = async (caseId, newStatus) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/cases/${caseId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setClientCases(prev => prev.map(caseItem => 
+          caseItem._id === caseId 
+            ? { ...caseItem, status: newStatus }
+            : caseItem
+        ));
+      }
+    } catch (error) {
+      console.error('Error updating case status:', error);
+    }
+  };
+
+  // Role-based data
+  const getRoleData = () => {
+    switch(user?.role) {
+      case 'lawyer':
+        const ongoing = lawyerCases.filter(c => c.status === 'ongoing').length;
+        const solved = lawyerCases.filter(c => c.status === 'solved').length;
+        const highPriority = lawyerCases.filter(c => c.priority === 'high').length;
+        const totalValue = lawyerCases.reduce((sum, c) => {
+          const value = parseInt(c.caseValue?.replace(/[^0-9]/g, '')) || 0;
+          return sum + value;
+        }, 0);
+        
+        return {
+          cases: lawyerCases,
+          stats: { ongoing, solved, highPriority, total: lawyerCases.length, totalValue },
+          title: 'Lawyer Dashboard',
+          showAddCase: true,
+          welcomeMessage: `Welcome back, ${user?.name}!`,
+          type: 'lawyer'
+        };
+
+      case 'client':
+        const clientOngoing = clientCases.filter(c => c.status === 'ongoing').length;
+        const clientSolved = clientCases.filter(c => c.status === 'solved').length;
+        
+        return {
+          cases: clientCases,
+          stats: { ongoing: clientOngoing, solved: clientSolved, total: clientCases.length },
+          title: 'My Legal Cases',
+          showAddCase: true,
+          welcomeMessage: `Hello ${user?.name}, track your legal matters here.`,
+          type: 'client'
+        };
+
+      default:
+        return {
+          cases: [],
+          stats: { ongoing: 0, solved: 0, total: 0 },
+          title: 'My Collection',
+          showAddCase: false,
+          welcomeMessage: 'Welcome to LegalMitra',
+          type: 'default'
+        };
+    }
+  };
+
+  const roleData = getRoleData();
+
+  // UI Components
+  const renderPaymentStatus = () => {
+    if (user?.role === 'lawyer') {
+      if (checkingPayment) {
+        return (
+          <div className="payment-status checking">
+            <span className="status-icon">⏳</span>
+            <span className="status-text">Checking payment status...</span>
+          </div>
+        );
+      }
+      
+      return (
+        <div className={`payment-status ${hasPaid ? 'paid' : 'unpaid'}`}>
+          <span className="status-icon">
+            {hasPaid ? '✅' : '💰'}
+          </span>
+          <span className="status-text">
+            {hasPaid ? 'Premium Member - Unlimited Cases' : 'One-time payment required to add cases'}
+          </span>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  const renderPaymentScreen = () => (
+    <div className="payment-overlay">
+      <div className="payment-modal">
+        <div className="payment-header">
+          <h3>One-Time Registration Fee</h3>
+          <button 
+            className="close-btn"
+            onClick={() => {
+              setShowPayment(false);
+              setCaseDataBeforePayment(null);
+            }}
+            disabled={paymentLoading}
+          >
+            ✕
+          </button>
+        </div>
+        
+        <div className="payment-content">
+          <div className="payment-info">
+            <div className="payment-icon">🎉</div>
+            <h4>Unlimited Case Access</h4>
+            <p>Pay once and add unlimited cases forever! No recurring fees.</p>
+            
+            <div className="payment-features">
+              <div className="feature-item">
+                <span className="feature-icon">✅</span>
+                <span>One-time payment only</span>
+              </div>
+              <div className="feature-item">
+                <span className="feature-icon">✅</span>
+                <span>Unlimited case creation</span>
+              </div>
+              <div className="feature-item">
+                <span className="feature-icon">✅</span>
+                <span>Lifetime access</span>
+              </div>
+            </div>
+            
+            <div className="payment-amount">
+              <span className="amount-label">One-Time Fee:</span>
+              <span className="amount-value">₹500</span>
+            </div>
+          </div>
+          
+          <div className="payment-actions">
+            <button 
+              className="pay-now-btn"
+              onClick={() => initiatePayment(caseDataBeforePayment)}
+              disabled={paymentLoading}
+            >
+              {paymentLoading ? (
+                <>
+                  <div className="loading-spinner-small"></div>
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <span className="btn-icon">💳</span>
+                  Pay ₹500 Once
+                </>
+              )}
+            </button>
+            
+            <button 
+              className="cancel-payment-btn"
+              onClick={() => {
+                setShowPayment(false);
+                setCaseDataBeforePayment(null);
+              }}
+              disabled={paymentLoading}
+            >
+              Maybe Later
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Render Solved Cases Section
+  const renderSolvedCasesSection = () => {
+    const solvedCases = roleData.cases.filter(caseItem => caseItem.status === 'solved');
+    
+    if (solvedCases.length === 0) return null;
+
+    return (
+      <div className="cases-section">
+        <div className="section-header">
+          <h2>
+            {user?.role === 'lawyer' && 'Solved Cases'}
+            {user?.role === 'client' && 'Solved Cases'}
+          </h2>
+          <button 
+            className={`toggle-solved-btn ${showSolvedCases ? 'active' : ''}`}
+            onClick={() => setShowSolvedCases(!showSolvedCases)}
+          >
+            {showSolvedCases ? '▲ Hide' : '▼ Show'} Solved Cases
+          </button>
+        </div>
+
+        {showSolvedCases && (
+          <div className="cases-grid">
+            {solvedCases.map(caseItem => renderCaseCard(caseItem))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const renderWelcomeSection = () => {
     const nextHearing = roleData.cases.find(c => c.status === 'ongoing')?.nextHearing;
     
@@ -406,13 +1152,12 @@ const MyCollection = () => {
         <div className="welcome-section">
           <h1>{roleData.welcomeMessage}
             <span className="welcome-emoji">
-              {user?.role === 'lawyer' ? '👨‍⚖️' : user?.role === 'client' ? '👤' : '🎓'}
+              {user?.role === 'lawyer' ? '👨‍⚖️' : '👤'}
             </span>
           </h1>
           <p className="welcome-subtitle">
             {user?.role === 'lawyer' && 'Here\'s your legal practice overview for today'}
             {user?.role === 'client' && 'Track your ongoing legal matters and case progress'}
-            {user?.role === 'student' && 'Enhance your legal knowledge with case studies'}
           </p>
           <div className="welcome-stats">
             {user?.role === 'lawyer' && nextHearing && (
@@ -426,7 +1171,6 @@ const MyCollection = () => {
               <span>
                 {user?.role === 'lawyer' && `High priority cases: ${roleData.stats.highPriority}`}
                 {user?.role === 'client' && `Active cases: ${roleData.stats.ongoing}`}
-                {user?.role === 'student' && `Cases studying: ${roleData.stats.studying}`}
               </span>
             </div>
           </div>
@@ -434,14 +1178,20 @@ const MyCollection = () => {
         <div className="header-actions">
           {user?.role === 'lawyer' && (
             <>
-              <button className="primary-btn">
-                <span className="btn-icon">📊</span>
-                Generate Report
+              <button 
+                className="primary-btn"
+                onClick={() => setShowForm(true)}
+              >
+                <span className="btn-icon">➕</span>
+                Add New Case
               </button>
-              <button className="secondary-btn">
-                <span className="btn-icon">👥</span>
-                Client Portal
-              </button>
+              <button 
+      className="secondary-btn"
+      onClick={() => setShowProfileCard(true)} // ADD THIS
+    >
+      <span className="btn-icon">👨‍⚖️</span>
+      Download Profile Card
+    </button>
             </>
           )}
           {user?.role === 'client' && (
@@ -453,18 +1203,11 @@ const MyCollection = () => {
               Add Your Case
             </button>
           )}
-          {user?.role === 'student' && (
-            <button className="primary-btn">
-              <span className="btn-icon">📚</span>
-              Study Materials
-            </button>
-          )}
         </div>
       </div>
     );
   };
 
-  // Render Stats
   const renderStats = () => {
     if (user?.role === 'lawyer') {
       return (
@@ -546,304 +1289,46 @@ const MyCollection = () => {
           </div>
         </div>
       );
-    } else if (user?.role === 'student') {
-      return (
-        <div className="stats-grid">
-          <div className="stat-card ongoing">
-            <div className="stat-icon">📚</div>
-            <div className="stat-content">
-              <h3>Saved Cases</h3>
-              <div className="stat-number">{roleData.stats.saved}</div>
-              <div className="stat-trend">For study</div>
-            </div>
-          </div>
-          
-          <div className="stat-card solved">
-            <div className="stat-icon">📖</div>
-            <div className="stat-content">
-              <h3>Studying</h3>
-              <div className="stat-number">{roleData.stats.studying}</div>
-              <div className="stat-trend">Currently learning</div>
-            </div>
-          </div>
-          
-          <div className="stat-card revenue">
-            <div className="stat-icon">✅</div>
-            <div className="stat-content">
-              <h3>Completed</h3>
-              <div className="stat-number">{roleData.stats.completed}</div>
-              <div className="stat-trend">Case studies</div>
-            </div>
-          </div>
-          
-          <div className="stat-card priority">
-            <div className="stat-icon">🎯</div>
-            <div className="stat-content">
-              <h3>Progress</h3>
-              <div className="stat-number">75%</div>
-              <div className="stat-trend">Learning journey</div>
-            </div>
-          </div>
-        </div>
-      );
     }
   };
 
-  // Render Quick Actions
-  const renderQuickActions = () => {
-    if (user?.role === 'lawyer') {
-      return (
-        <div className="quick-actions">
-          <h3>Quick Actions</h3>
-          <div className="action-buttons">
-            <button 
-              className="action-btn"
-              onClick={() => setShowForm(!showForm)}
-            >
-              <span className="action-icon">➕</span>
-              Add New Case
-            </button>
-            <button className="action-btn">
-              <span className="action-icon">📞</span>
-              Schedule Call
-            </button>
-            <button className="action-btn">
-              <span className="action-icon">📄</span>
-              Upload Documents
-            </button>
-            <button className="action-btn">
-              <span className="action-icon">🎯</span>
-              Set Reminder
-            </button>
-          </div>
-        </div>
-      );
-    } else if (user?.role === 'client') {
-      return (
-        <div className="quick-actions">
-          <h3>Quick Actions</h3>
-          <div className="action-buttons">
-            <button 
-              className="action-btn"
-              onClick={() => setShowClientCaseForm(true)}
-            >
-              <span className="action-icon">➕</span>
-              Add Your Case
-            </button>
-            <button className="action-btn">
-              <span className="action-icon">📊</span>
-              Case Progress
-            </button>
-            <button className="action-btn">
-              <span className="action-icon">📅</span>
-              Hearing Dates
-            </button>
-            <button className="action-btn">
-              <span className="action-icon">💼</span>
-              My Documents
-            </button>
-          </div>
-        </div>
-      );
-    } else if (user?.role === 'student') {
-      return (
-        <div className="quick-actions">
-          <h3>Study Tools</h3>
-          <div className="action-buttons">
-            <button className="action-btn">
-              <span className="action-icon">🔍</span>
-              Find Cases
-            </button>
-            <button className="action-btn">
-              <span className="action-icon">📝</span>
-              Take Notes
-            </button>
-            <button className="action-btn">
-              <span className="action-icon">📚</span>
-              Study Materials
-            </button>
-            <button className="action-btn">
-              <span className="action-icon">🎯</span>
-              Quiz Yourself
-            </button>
-          </div>
-        </div>
-      );
-    }
-  };
-
-  // NEW: Render Client Case Form
-  const renderClientCaseForm = () => (
-    <div className="case-form-overlay">
-      <div className="case-form-modal">
-        <div className="form-header">
-          <h3>Add Your Case</h3>
-          <button 
-            className="close-btn"
-            onClick={() => setShowClientCaseForm(false)}
-          >
-            ✕
-          </button>
-        </div>
-        <form onSubmit={handleSubmitClientCase} className="enhanced-form">
-          <div className="form-section">
-            <h4>Case Information</h4>
-            <div className="form-row">
-              <div className="form-group">
-                <label>Case Name *</label>
-                <input
-                  type="text"
-                  name="caseName"
-                  value={newClientCase.caseName}
-                  onChange={handleClientCaseInputChange}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Case Type *</label>
-                <select
-                  name="caseType"
-                  value={newClientCase.caseType}
-                  onChange={handleClientCaseInputChange}
-                  required
-                >
-                  <option value="">Select Type</option>
-                  <option value="Civil">Civil</option>
-                  <option value="Criminal">Criminal</option>
-                  <option value="Commercial">Commercial</option>
-                  <option value="Family">Family</option>
-                  <option value="Property">Property</option>
-                  <option value="Corporate">Corporate</option>
-                </select>
-              </div>
-            </div>
-            <div className="form-row">
-              <div className="form-group">
-                <label>Case Number</label>
-                <input
-                  type="text"
-                  name="caseNumber"
-                  value={newClientCase.caseNumber}
-                  onChange={handleClientCaseInputChange}
-                />
-              </div>
-              <div className="form-group">
-                <label>Court Name</label>
-                <input
-                  type="text"
-                  name="courtName"
-                  value={newClientCase.courtName}
-                  onChange={handleClientCaseInputChange}
-                />
-              </div>
-            </div>
-            <div className="form-row">
-              <div className="form-group">
-                <label>Filing Date</label>
-                <input
-                  type="date"
-                  name="filingDate"
-                  value={newClientCase.filingDate}
-                  onChange={handleClientCaseInputChange}
-                />
-              </div>
-              <div className="form-group">
-                <label>Next Hearing</label>
-                <input
-                  type="date"
-                  name="nextHearing"
-                  value={newClientCase.nextHearing}
-                  onChange={handleClientCaseInputChange}
-                />
-              </div>
-            </div>
-            <div className="form-group full-width">
-              <label>Case Description *</label>
-              <textarea
-                name="caseDescription"
-                value={newClientCase.caseDescription}
-                onChange={handleClientCaseInputChange}
-                rows="4"
-                required
-              />
-            </div>
-          </div>
-
-          <div className="form-section">
-            <h4>Lawyer Information</h4>
-            <div className="form-row">
-              <div className="form-group">
-                <label>Lawyer Name *</label>
-                <input
-                  type="text"
-                  name="lawyerName"
-                  value={newClientCase.lawyerName}
-                  onChange={handleClientCaseInputChange}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Lawyer Email *</label>
-                <input
-                  type="email"
-                  name="lawyerEmail"
-                  value={newClientCase.lawyerEmail}
-                  onChange={handleClientCaseInputChange}
-                  required
-                />
-              </div>
-            </div>
-            <div className="form-group">
-              <label>Lawyer Phone</label>
-              <input
-                type="tel"
-                name="lawyerPhone"
-                value={newClientCase.lawyerPhone}
-                onChange={handleClientCaseInputChange}
-              />
-            </div>
-          </div>
-
-          <div className="form-actions">
-            <button type="submit" className="submit-btn" disabled={isLoading}>
-              <span className="btn-icon">💼</span>
-              {isLoading ? 'Adding...' : 'Add Case'}
-            </button>
-            <button 
-              type="button" 
-              className="cancel-btn"
-              onClick={() => setShowClientCaseForm(false)}
-              disabled={isLoading}
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-
-  // Render Case Card
   const renderCaseCard = (caseItem) => {
     if (user?.role === 'lawyer') {
       return (
         <div key={caseItem._id} className={`case-card ${caseItem.priority} ${caseItem.status}`}>
           <div className="case-header" onClick={() => toggleCaseExpand(caseItem._id)}>
-            <div className="case-title-section">
-              <h3>{caseItem.caseName}</h3>
-              <div className="case-meta">
-                <span className="case-number">{caseItem.caseNumber || 'N/A'}</span>
-                <span className={`status-badge ${caseItem.status}`}>
-                  {caseItem.status === 'ongoing' ? '📋' : '✅'} {caseItem.status}
-                </span>
-                <span className={`priority-badge ${caseItem.priority}`}>
-                  {caseItem.priority === 'high' ? '🔴' : caseItem.priority === 'medium' ? '🟡' : '🟢'} {caseItem.priority}
-                </span>
-              </div>
-            </div>
-            <button className="expand-btn">
-              {expandedCase === caseItem._id ? '▲' : '▼'}
-            </button>
+           <div className="case-header" onClick={() => toggleCaseExpand(caseItem._id)}>
+  <div className="case-title-section">
+    <h3>{caseItem.caseName}</h3>
+    <div className="case-meta">
+      <span className="case-number">{caseItem.caseNumber || 'N/A'}</span>
+      <span className={`status-badge ${caseItem.status}`}>
+        {caseItem.status === 'ongoing' ? '📋' : '✅'} {caseItem.status}
+      </span>
+      <span className={`priority-badge ${caseItem.priority}`}>
+        {caseItem.priority === 'high' ? '🔴' : caseItem.priority === 'medium' ? '🟡' : '🟢'} {caseItem.priority}
+      </span>
+    </div>
+  </div>
+  <div className="case-header-actions">
+    {/* Call Button - Only show for lawyers */}
+    {user?.role === 'lawyer' && (
+      <button 
+        className="call-client-btn"
+        onClick={(e) => {
+          e.stopPropagation(); // Prevent expanding the case
+          openCallOptions(caseItem);
+        }}
+        title="Contact Client"
+      >
+        <span className="call-icon">📞</span>
+      </button>
+    )}
+    <button className="expand-btn">
+      {expandedCase === caseItem._id ? '▲' : '▼'}
+    </button>
+  </div>
+</div>
           </div>
 
           <div className="case-summary">
@@ -858,10 +1343,6 @@ const MyCollection = () => {
             <div className="summary-item">
               <span className="summary-icon">🏛️</span>
               <span>{caseItem.courtName || 'N/A'}</span>
-            </div>
-            <div className="summary-item">
-              <span className="summary-icon">💰</span>
-              <span>{caseItem.caseValue || 'N/A'}</span>
             </div>
           </div>
 
@@ -879,9 +1360,6 @@ const MyCollection = () => {
                   <div className="detail-item">
                     <strong>Phone:</strong> {caseItem.clientPhone}
                   </div>
-                  <div className="detail-item">
-                    <strong>Address:</strong> {caseItem.clientAddress}
-                  </div>
                 </div>
 
                 <div className="detail-section">
@@ -893,20 +1371,7 @@ const MyCollection = () => {
                     <strong>Court:</strong> {caseItem.courtName || 'N/A'}
                   </div>
                   <div className="detail-item">
-                    <strong>Filing Date:</strong> {caseItem.filingDate ? new Date(caseItem.filingDate).toLocaleDateString() : 'N/A'}
-                  </div>
-                  <div className="detail-item">
                     <strong>Next Hearing:</strong> {caseItem.nextHearing ? new Date(caseItem.nextHearing).toLocaleDateString() : 'N/A'}
-                  </div>
-                </div>
-
-                <div className="detail-section">
-                  <h4>Opponent Information</h4>
-                  <div className="detail-item">
-                    <strong>Opponent:</strong> {caseItem.opponentName || 'N/A'}
-                  </div>
-                  <div className="detail-item">
-                    <strong>Opponent Lawyer:</strong> {caseItem.opponentLawyer || 'N/A'}
                   </div>
                 </div>
 
@@ -927,20 +1392,38 @@ const MyCollection = () => {
                 </div>
               </div>
 
-              <div className="case-actions">
-                <button 
-                  className={`status-btn ${caseItem.status === 'ongoing' ? 'solved' : 'ongoing'}`}
-                  onClick={() => updateCaseStatus(caseItem._id, caseItem.status === 'ongoing' ? 'solved' : 'ongoing')}
-                >
-                  {caseItem.status === 'ongoing' ? '✅ Mark as Solved' : '📋 Reopen Case'}
-                </button>
-                <button className="action-btn-small">
-                  📞 Call Client
-                </button>
-                <button className="action-btn-small">
-                  ✏️ Edit Details
-                </button>
-              </div>
+             <div className="case-actions">
+  <div className="action-buttons-container">
+    {/* Contact Client Button - Only for lawyers */}
+    {user?.role === 'lawyer' && (
+      <button 
+        className="contact-client-action-btn"
+        onClick={(e) => {
+          e.stopPropagation();
+          console.log('📞 Opening contact popup for:', caseItem.clientName);
+          openContactPopup(caseItem);
+        }}
+        title="View Contact Details"
+      >
+        <span className="action-icon">👤</span>
+        Contact Details
+      </button>
+    )}
+    
+    <button 
+      className={`status-btn ${caseItem.status === 'ongoing' ? 'solved' : 'ongoing'}`}
+      onClick={(e) => {
+        e.stopPropagation();
+        updateCaseStatus(caseItem._id, caseItem.status === 'ongoing' ? 'solved' : 'ongoing');
+      }}
+    >
+      <span className="action-icon">
+        {caseItem.status === 'ongoing' ? '✅' : '📋'}
+      </span>
+      {caseItem.status === 'ongoing' ? 'Mark as Solved' : 'Reopen Case'}
+    </button>
+  </div>
+</div>
             </div>
           )}
         </div>
@@ -949,19 +1432,22 @@ const MyCollection = () => {
       return (
         <div key={caseItem._id} className={`case-card ${caseItem.status}`}>
           <div className="case-header" onClick={() => toggleCaseExpand(caseItem._id)}>
-            <div className="case-title-section">
-              <h3>{caseItem.caseName}</h3>
-              <div className="case-meta">
-                <span className="case-number">{caseItem.caseNumber || 'N/A'}</span>
-                <span className={`status-badge ${caseItem.status}`}>
-                  {caseItem.status === 'ongoing' ? '📋' : '✅'} {caseItem.status}
-                </span>
-              </div>
-            </div>
-            <button className="expand-btn">
-              {expandedCase === caseItem._id ? '▲' : '▼'}
-            </button>
-          </div>
+  <div className="case-title-section">
+    <h3>{caseItem.caseName}</h3>
+    <div className="case-meta">
+      <span className="case-number">{caseItem.caseNumber || 'N/A'}</span>
+      <span className={`status-badge ${caseItem.status}`}>
+        {caseItem.status === 'ongoing' ? '📋' : '✅'} {caseItem.status}
+      </span>
+      <span className={`priority-badge ${caseItem.priority}`}>
+        {caseItem.priority === 'high' ? '🔴' : caseItem.priority === 'medium' ? '🟡' : '🟢'} {caseItem.priority}
+      </span>
+    </div>
+  </div>
+  <button className="expand-btn">
+    {expandedCase === caseItem._id ? '▲' : '▼'}
+  </button>
+</div>
 
           <div className="case-summary">
             <div className="summary-item">
@@ -989,9 +1475,6 @@ const MyCollection = () => {
                   <div className="detail-item">
                     <strong>Email:</strong> {caseItem.lawyerEmail}
                   </div>
-                  <div className="detail-item">
-                    <strong>Phone:</strong> {caseItem.lawyerPhone}
-                  </div>
                 </div>
 
                 <div className="detail-section">
@@ -1000,16 +1483,7 @@ const MyCollection = () => {
                     <strong>Case Number:</strong> {caseItem.caseNumber || 'N/A'}
                   </div>
                   <div className="detail-item">
-                    <strong>Type:</strong> {caseItem.caseType}
-                  </div>
-                  <div className="detail-item">
-                    <strong>Status:</strong> {caseItem.status}
-                  </div>
-                  <div className="detail-item">
                     <strong>Court:</strong> {caseItem.courtName || 'N/A'}
-                  </div>
-                  <div className="detail-item">
-                    <strong>Filing Date:</strong> {caseItem.filingDate ? new Date(caseItem.filingDate).toLocaleDateString() : 'N/A'}
                   </div>
                   <div className="detail-item">
                     <strong>Next Hearing:</strong> {caseItem.nextHearing ? new Date(caseItem.nextHearing).toLocaleDateString() : 'N/A'}
@@ -1034,110 +1508,169 @@ const MyCollection = () => {
           )}
         </div>
       );
-    } else if (user?.role === 'student') {
-      return (
-        <div key={caseItem.id} className="case-card study">
-          <div className="case-header" onClick={() => toggleCaseExpand(caseItem.id)}>
-            <div className="case-title-section">
-              <h3>{caseItem.caseName}</h3>
-              <div className="case-meta">
-                <span className="case-number">{caseItem.court} ({caseItem.year})</span>
-                <span className={`importance-badge ${caseItem.importance}`}>
-                  {caseItem.importance} Importance
-                </span>
-              </div>
-            </div>
-            <button className="expand-btn">
-              {expandedCase === caseItem.id ? '▲' : '▼'}
-            </button>
-          </div>
-
-          <div className="case-summary">
-            <div className="summary-item">
-              <span className="summary-icon">⚖️</span>
-              <span>{caseItem.caseType}</span>
-            </div>
-            <div className="summary-item">
-              <span className="summary-icon">🏛️</span>
-              <span>{caseItem.court}</span>
-            </div>
-            <div className="summary-item">
-              <span className="summary-icon">📅</span>
-              <span>{caseItem.year}</span>
-            </div>
-          </div>
-
-          {expandedCase === caseItem.id && (
-            <div className="case-details">
-              <div className="details-grid">
-                <div className="detail-section full-width">
-                  <h4>Key Learning Points</h4>
-                  <ul className="study-points">
-                    {caseItem.studyPoints.map((point, index) => (
-                      <li key={index}>📌 {point}</li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div className="detail-section full-width">
-                  <h4>Study Notes</h4>
-                  <textarea
-                    placeholder="Add your study notes and observations here..."
-                    value={caseNotes[caseItem.id] || ''}
-                    onChange={(e) => handleNoteChange(caseItem.id, e.target.value)}
-                    className="notes-textarea"
-                    rows="4"
-                  />
-                </div>
-              </div>
-
-              <div className="case-actions">
-                <button className="action-btn-small">
-                  📚 Related Cases
-                </button>
-                <button className="action-btn-small">
-                  🎯 Take Quiz
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      );
     }
   };
+// Contact Popup Function
+const openContactPopup = (caseItem) => {
+  setSelectedCaseForCall(caseItem);
+  setShowCallModal(true);
+};
 
-  // NEW: Render Solved Cases Section
-  const renderSolvedCasesSection = () => {
-    const solvedCases = roleData.cases.filter(caseItem => caseItem.status === 'solved');
-    
-    if (solvedCases.length === 0) return null;
+// Enhanced Contact Popup Modal
+const renderContactPopup = () => {
+  if (!selectedCaseForCall) return null;
 
-    return (
-      <div className="cases-section">
-        <div className="section-header">
-          <h2>
-            {user?.role === 'lawyer' && 'Solved Cases'}
-            {user?.role === 'client' && 'Solved Cases'}
-            {user?.role === 'student' && 'Completed Studies'}
-          </h2>
+  return (
+    <div className="contact-popup-overlay">
+      <div className="contact-popup">
+        <div className="contact-popup-header">
+          <h3>Client Contact Details</h3>
           <button 
-            className={`toggle-solved-btn ${showSolvedCases ? 'active' : ''}`}
-            onClick={() => setShowSolvedCases(!showSolvedCases)}
+            className="close-btn"
+            onClick={() => setShowCallModal(false)}
           >
-            {showSolvedCases ? '▲ Hide' : '▼ Show'} Solved Cases
+            ✕
           </button>
         </div>
 
-        {showSolvedCases && (
-          <div className="cases-grid">
-            {solvedCases.map(caseItem => renderCaseCard(caseItem))}
+        <div className="contact-popup-content">
+          {/* Client Information Card */}
+          <div className="client-info-card">
+            <div className="client-avatar-large">
+              {selectedCaseForCall.clientName?.charAt(0) || 'C'}
+            </div>
+            <div className="client-info-main">
+              <h4>{selectedCaseForCall.clientName}</h4>
+              <p className="client-case-info">{selectedCaseForCall.caseName}</p>
+              <div className="case-meta-info">
+                <span className="case-type">{selectedCaseForCall.caseType}</span>
+                <span className="case-status-badge">{selectedCaseForCall.status}</span>
+              </div>
+            </div>
           </div>
-        )}
-      </div>
-    );
-  };
 
-  // Render Lawyer Form
+          {/* Contact Details */}
+          <div className="contact-details-section">
+            <h5>Contact Information</h5>
+            <div className="contact-details-grid">
+              <div className="contact-item">
+                <span className="contact-icon">📧</span>
+                <div className="contact-info">
+                  <label>Email</label>
+                  <p>{selectedCaseForCall.clientEmail || 'Not provided'}</p>
+                </div>
+              </div>
+              
+              <div className="contact-item">
+                <span className="contact-icon">📞</span>
+                <div className="contact-info">
+                  <label>Phone</label>
+                  <p>{selectedCaseForCall.clientPhone || 'Not provided'}</p>
+                </div>
+              </div>
+              
+              <div className="contact-item">
+                <span className="contact-icon">🏠</span>
+                <div className="contact-info">
+                  <label>Address</label>
+                  <p>{selectedCaseForCall.clientAddress || 'Not provided'}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="quick-actions-section">
+            <h5>Quick Actions</h5>
+            <div className="quick-actions-grid">
+              <button 
+                className="quick-action-btn call-btn"
+                onClick={() => {
+                  if (selectedCaseForCall.clientPhone) {
+                    callClient(selectedCaseForCall);
+                    setShowCallModal(false);
+                  }
+                }}
+                disabled={!selectedCaseForCall.clientPhone}
+              >
+                <span className="action-icon-large">📞</span>
+                <span>Call</span>
+              </button>
+
+              <button 
+                className="quick-action-btn sms-btn"
+                onClick={() => {
+                  if (selectedCaseForCall.clientPhone) {
+                    sendSMS(selectedCaseForCall);
+                    setShowCallModal(false);
+                  }
+                }}
+                disabled={!selectedCaseForCall.clientPhone}
+              >
+                <span className="action-icon-large">💬</span>
+                <span>SMS</span>
+              </button>
+
+              <button 
+                className="quick-action-btn email-btn"
+                onClick={() => {
+                  if (selectedCaseForCall.clientEmail) {
+                    window.open(`mailto:${selectedCaseForCall.clientEmail}?subject=Regarding your case: ${selectedCaseForCall.caseName}`, '_self');
+                    setShowCallModal(false);
+                  }
+                }}
+                disabled={!selectedCaseForCall.clientEmail}
+              >
+                <span className="action-icon-large">📧</span>
+                <span>Email</span>
+              </button>
+
+              <button 
+                className="quick-action-btn copy-btn"
+                onClick={() => {
+                  const contactText = `Name: ${selectedCaseForCall.clientName}\nPhone: ${selectedCaseForCall.clientPhone || 'N/A'}\nEmail: ${selectedCaseForCall.clientEmail || 'N/A'}\nCase: ${selectedCaseForCall.caseName}`;
+                  navigator.clipboard.writeText(contactText);
+                  alert('Contact details copied to clipboard!');
+                }}
+              >
+                <span className="action-icon-large">📋</span>
+                <span>Copy</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Communication History */}
+          <div className="communication-history">
+            <h5>Recent Communications</h5>
+            {getCallLogs(selectedCaseForCall._id).length > 0 ? (
+              <div className="communication-list">
+                {getCallLogs(selectedCaseForCall._id)
+                  .slice(-3)
+                  .reverse()
+                  .map((log, index) => (
+                  <div key={index} className="communication-item">
+                    <span className={`comm-icon ${log.type}`}>
+                      {log.type === 'outgoing' ? '📞' : 
+                       log.type === 'sms' ? '💬' : '📧'}
+                    </span>
+                    <div className="comm-details">
+                      <span className="comm-type">{log.type}</span>
+                      <span className="comm-time">
+                        {new Date(log.timestamp).toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="no-communications">No recent communications</p>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
   const renderLawyerForm = () => (
     <div className="case-form-overlay">
       <div className="case-form-modal">
@@ -1186,16 +1719,6 @@ const MyCollection = () => {
                   required
                 />
               </div>
-              <div className="form-group">
-                <label>Case Value (₹)</label>
-                <input
-                  type="text"
-                  name="caseValue"
-                  value={newCase.caseValue}
-                  onChange={handleInputChange}
-                  placeholder="e.g., ₹50,00,000"
-                />
-              </div>
             </div>
             <div className="form-group full-width">
               <label>Client Address *</label>
@@ -1233,10 +1756,8 @@ const MyCollection = () => {
                   <option value="">Select Type</option>
                   <option value="Civil">Civil</option>
                   <option value="Criminal">Criminal</option>
-                  <option value="Commercial">Commercial</option>
                   <option value="Family">Family</option>
                   <option value="Property">Property</option>
-                  <option value="Corporate">Corporate</option>
                 </select>
               </div>
             </div>
@@ -1262,15 +1783,6 @@ const MyCollection = () => {
             </div>
             <div className="form-row">
               <div className="form-group">
-                <label>Filing Date</label>
-                <input
-                  type="date"
-                  name="filingDate"
-                  value={newCase.filingDate}
-                  onChange={handleInputChange}
-                />
-              </div>
-              <div className="form-group">
                 <label>Next Hearing</label>
                 <input
                   type="date"
@@ -1283,56 +1795,7 @@ const MyCollection = () => {
           </div>
 
           <div className="form-section">
-            <h4>Opponent Information</h4>
-            <div className="form-row">
-              <div className="form-group">
-                <label>Opponent Name</label>
-                <input
-                  type="text"
-                  name="opponentName"
-                  value={newCase.opponentName}
-                  onChange={handleInputChange}
-                />
-              </div>
-              <div className="form-group">
-                <label>Opponent Lawyer</label>
-                <input
-                  type="text"
-                  name="opponentLawyer"
-                  value={newCase.opponentLawyer}
-                  onChange={handleInputChange}
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="form-section">
             <h4>Additional Information</h4>
-            <div className="form-row">
-              <div className="form-group">
-                <label>Priority</label>
-                <select
-                  name="priority"
-                  value={newCase.priority}
-                  onChange={handleInputChange}
-                >
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Status</label>
-                <select
-                  name="status"
-                  value={newCase.status}
-                  onChange={handleInputChange}
-                >
-                  <option value="ongoing">Ongoing</option>
-                  <option value="solved">Solved</option>
-                </select>
-              </div>
-            </div>
             <div className="form-group full-width">
               <label>Case Description *</label>
               <textarea
@@ -1347,7 +1810,6 @@ const MyCollection = () => {
 
           <div className="form-actions">
             <button type="submit" className="submit-btn" disabled={isLoading}>
-              <span className="btn-icon">💼</span>
               {isLoading ? 'Creating...' : 'Create Case'}
             </button>
             <button 
@@ -1364,17 +1826,158 @@ const MyCollection = () => {
     </div>
   );
 
-  return (
-    <div className="lawyer-dashboard">
-      {renderWelcomeSection()}
-      {renderStats()}
-      {renderQuickActions()}
+  const renderClientCaseForm = () => (
+    <div className="case-form-overlay">
+      <div className="case-form-modal">
+        <div className="form-header">
+          <h3>Add Your Case</h3>
+          <button 
+            className="close-btn"
+            onClick={() => setShowClientCaseForm(false)}
+          >
+            ✕
+          </button>
+        </div>
+        <form onSubmit={handleSubmitClientCase} className="enhanced-form">
+          <div className="form-section">
+            <h4>Case Information</h4>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Case Name *</label>
+                <input
+                  type="text"
+                  name="caseName"
+                  value={newClientCase.caseName}
+                  onChange={handleClientCaseInputChange}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>Case Type *</label>
+                <select
+                  name="caseType"
+                  value={newClientCase.caseType}
+                  onChange={handleClientCaseInputChange}
+                  required
+                >
+                  <option value="">Select Type</option>
+                  <option value="Civil">Civil</option>
+                  <option value="Criminal">Criminal</option>
+                  <option value="Family">Family</option>
+                  <option value="Property">Property</option>
+                </select>
+              </div>
+            </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Case Number</label>
+                <input
+                  type="text"
+                  name="caseNumber"
+                  value={newClientCase.caseNumber}
+                  onChange={handleClientCaseInputChange}
+                />
+              </div>
+              <div className="form-group">
+                <label>Court Name</label>
+                <input
+                  type="text"
+                  name="courtName"
+                  value={newClientCase.courtName}
+                  onChange={handleClientCaseInputChange}
+                />
+              </div>
+            </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Next Hearing</label>
+                <input
+                  type="date"
+                  name="nextHearing"
+                  value={newClientCase.nextHearing}
+                  onChange={handleClientCaseInputChange}
+                />
+              </div>
+            </div>
+            <div className="form-group full-width">
+              <label>Case Description *</label>
+              <textarea
+                name="caseDescription"
+                value={newClientCase.caseDescription}
+                onChange={handleClientCaseInputChange}
+                rows="4"
+                required
+              />
+            </div>
+          </div>
 
-      {/* Add Case Form - Only for Lawyers */}
-      {showForm && user?.role === 'lawyer' && renderLawyerForm()}
+          <div className="form-section">
+            <h4>Lawyer Information</h4>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Lawyer Name *</label>
+                <input
+                  type="text"
+                  name="lawyerName"
+                  value={newClientCase.lawyerName}
+                  onChange={handleClientCaseInputChange}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>Lawyer Email *</label>
+                <input
+                  type="email"
+                  name="lawyerEmail"
+                  value={newClientCase.lawyerEmail}
+                  onChange={handleClientCaseInputChange}
+                  required
+                />
+              </div>
+            </div>
+          </div>
 
-      {/* Add Client Case Form */}
-      {showClientCaseForm && user?.role === 'client' && renderClientCaseForm()}
+          <div className="form-actions">
+            <button type="submit" className="submit-btn" disabled={isLoading}>
+              <span className="btn-icon">💼</span>
+              {isLoading ? 'Adding...' : 'Add Case'}
+            </button>
+            <button 
+              type="button" 
+              className="cancel-btn"
+              onClick={() => setShowClientCaseForm(false)}
+              disabled={isLoading}
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+
+ return (
+  <div className="lawyer-dashboard">
+    {renderWelcomeSection()}
+    {renderPaymentStatus()}
+    {renderStats()}
+
+    {/* Add Case Form - Only for Lawyers */}
+    {showForm && user?.role === 'lawyer' && renderLawyerForm()}
+
+    {/* Add Client Case Form */}
+    {showClientCaseForm && user?.role === 'client' && renderClientCaseForm()}
+
+    {/* Payment Screen */}
+    {showPayment && renderPaymentScreen()}
+
+    {/* Profile Card Modal - ADD THIS */}
+    {showProfileCard && renderProfileCardModal()}
+
+    {showCallModal && renderCallModal()}
+    {showCallModal && renderContactPopup()}
+
+
 
       {/* Cases Section */}
       <div className="cases-section">
@@ -1382,7 +1985,6 @@ const MyCollection = () => {
           <h2>
             {user?.role === 'lawyer' && 'My Cases'}
             {user?.role === 'client' && 'My Legal Cases'}
-            {user?.role === 'student' && 'Case Studies'}
           </h2>
         </div>
 
@@ -1399,14 +2001,13 @@ const MyCollection = () => {
               <div className="empty-state">
                 {user?.role === 'lawyer' && 'No cases found. Click "Add Case" to get started.'}
                 {user?.role === 'client' && 'No cases found. Click "Add Your Case" to get started.'}
-                {user?.role === 'student' && 'No case studies saved yet.'}
               </div>
             )}
           </div>
         )}
       </div>
 
-      {/* Solved Cases Section */}
+      {/* SOLVED CASES SECTION */}
       {renderSolvedCasesSection()}
     </div>
   );

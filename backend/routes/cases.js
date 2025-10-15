@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const Case = require("../models/Case");
+const User = require("../models/User");
 const { protect } = require("../middleware/auth");
 
 // Get all cases for current user (both lawyer and client)
@@ -22,16 +23,27 @@ router.get("/my-cases", protect, async (req, res) => {
   }
 });
 
-// Create new case (Lawyer)
+// Create new case (Lawyer) - WITH PAYMENT CHECK
 router.post("/create", protect, async (req, res) => {
   try {
     if (req.user.role !== 'lawyer') {
       return res.status(403).json({ error: "Only lawyers can create cases" });
     }
 
+    // Check if user has paid
+    const user = await User.findById(req.user.id);
+    if (!user.hasPaid) {
+      return res.status(402).json({ 
+        success: false,
+        error: "Payment required",
+        message: "Please complete the one-time payment to add cases" 
+      });
+    }
+
     const caseData = {
       ...req.body,
-      lawyer: req.user.id
+      lawyer: req.user.id,
+      // No payment fields needed for subsequent cases
     };
 
     const newCase = new Case(caseData);
@@ -43,7 +55,69 @@ router.post("/create", protect, async (req, res) => {
   }
 });
 
-// Create new case (Client) - FIXED VERSION
+// Create case after payment verification
+router.post("/create-after-payment", protect, async (req, res) => {
+  try {
+    console.log("=== CREATE AFTER PAYMENT ===");
+    
+    if (!req.user) {
+      return res.status(401).json({ 
+        success: false,
+        error: "User not authenticated" 
+      });
+    }
+
+    if (req.user.role !== 'lawyer') {
+      return res.status(403).json({ 
+        success: false,
+        error: "Only lawyers can create cases" 
+      });
+    }
+
+    // Verify payment data is present
+    if (!req.body.paymentId || !req.body.razorpayOrderId) {
+      return res.status(400).json({
+        success: false,
+        error: "Payment verification data is missing"
+      });
+    }
+
+    const { caseData, paymentId, razorpayOrderId } = req.body;
+
+    const caseWithPayment = {
+      ...caseData,
+      lawyer: req.user.id,
+      lawyerName: req.user.name,
+      lawyerEmail: req.user.email,
+      paymentId: paymentId,
+      paymentStatus: 'completed',
+      paymentAmount: 500,
+      razorpayOrderId: razorpayOrderId,
+      status: 'ongoing'
+    };
+
+    console.log("Creating case with data:", caseWithPayment);
+
+    const newCase = new Case(caseWithPayment);
+    await newCase.save();
+
+    console.log("Case created successfully:", newCase._id);
+
+    res.status(201).json({ 
+      success: true, 
+      message: "Case created successfully after payment",
+      case: newCase 
+    });
+  } catch (error) {
+    console.error('Error creating case after payment:', error);
+    res.status(500).json({ 
+      success: false,
+      error: error.message 
+    });
+  }
+});
+
+// Create new case (Client)
 router.post("/client/create", protect, async (req, res) => {
   try {
     console.log("Client case creation request:", req.body);
@@ -257,6 +331,24 @@ router.delete("/:id", protect, async (req, res) => {
 
     if (!deletedCase) return res.status(404).json({ msg: "Case not found" });
     res.json({ success: true, message: "Case deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get case by ID
+router.get("/:id", protect, async (req, res) => {
+  try {
+    let caseItem;
+
+    if (req.user.role === 'lawyer') {
+      caseItem = await Case.findOne({ _id: req.params.id, lawyer: req.user.id });
+    } else if (req.user.role === 'client') {
+      caseItem = await Case.findOne({ _id: req.params.id, client: req.user.id });
+    }
+
+    if (!caseItem) return res.status(404).json({ msg: "Case not found" });
+    res.json({ success: true, case: caseItem });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

@@ -8,7 +8,7 @@ const Navbar = ({ currentPage, setCurrentPage }) => {
   const navItems = [
     { id: 'home', label: 'Home' },
     { id: 'law-sections', label: 'Law Sections Info' },
-    { id: 'predict-bail', label: 'Predict Your Bail' },
+    { id: 'predict-bail', label: 'Predict Bail' },
     { id: 'my-collection', label: 'My Collection' },
     { id: 'find-lawyer', label: 'Find a Lawyer' },
     { id: 'faq', label: 'FAQ' },

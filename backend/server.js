@@ -20,10 +20,12 @@ mongoose.connect(process.env.MONGO_URI, {
 // Import routes
 const authRoutes = require("./routes/auth");
 const caseRoutes = require("./routes/cases");
+const paymentRoutes = require("./routes/payment"); // Add this line
 
 // Use routes
 app.use("/api/auth", authRoutes);
 app.use("/api/cases", caseRoutes);
+app.use("/api/payment", paymentRoutes); // Add this line
 
 // Server start
 const PORT = process.env.PORT || 5000;

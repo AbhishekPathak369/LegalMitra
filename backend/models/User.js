@@ -20,7 +20,9 @@ const UserSchema = new mongoose.Schema({
     required: true,
     enum: ['client', 'lawyer', 'student'],
     default: 'client'
-  }
+  },
+  hasPaid: { type: Boolean, default: false }, // NEW: One-time payment tracking
+  paymentDate: { type: Date }, // NEW: When they paid
 }, {
   timestamps: true
 });

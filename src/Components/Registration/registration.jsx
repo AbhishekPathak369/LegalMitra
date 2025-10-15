@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import './registration.css';
 import logo from '../../assets/logo.png';
+
 const Registration = ({ setCurrentPage }) => {
   const [formData, setFormData] = useState({
     name: '',
@@ -102,7 +103,7 @@ const Registration = ({ setCurrentPage }) => {
       <div className="registration-card">
         <div className="registration-hero">
           <div className="hero-content">
-          <img src={logo} height={100} width={100}></img>
+            <img src={logo} height={100} width={100}></img>
             <h1>Join LegalMitra</h1>
             <p>Your trusted legal partner for comprehensive legal solutions</p>
             <div className="features">
@@ -184,9 +185,9 @@ const Registration = ({ setCurrentPage }) => {
                 onChange={handleChange}
               >
                 <option value="">Select Role</option>
-                <option value="client">Client</option>
+                <option value="client">User</option>
                 <option value="lawyer">Lawyer</option>
-                <option value="student">Law Student</option>
+                
               </select>
               {errors.role && <span className="error-text">{errors.role}</span>}
             </div>

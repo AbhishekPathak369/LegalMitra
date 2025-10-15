@@ -41,7 +41,27 @@ const CaseSchema = new mongoose.Schema({
   priority: { type: String, enum: ['low', 'medium', 'high'], default: 'medium' },
   status: { type: String, enum: ['ongoing', 'solved'], default: 'ongoing' },
   documents: [{ type: String }],
-  notes: { type: String, default: '' }
+  notes: { type: String, default: '' },
+
+  // NEW: Payment Information
+  paymentId: { 
+    type: String, 
+    default: null 
+  },
+  paymentStatus: { 
+    type: String, 
+    enum: ['pending', 'completed', 'failed'], 
+    default: 'pending' 
+  },
+  paymentAmount: { 
+    type: Number, 
+    default: 500 
+  },
+  razorpayOrderId: {
+    type: String,
+    default: null
+  }
+
 }, {
   timestamps: true
 });
@@ -50,5 +70,6 @@ const CaseSchema = new mongoose.Schema({
 CaseSchema.index({ lawyer: 1, createdAt: -1 });
 CaseSchema.index({ client: 1, createdAt: -1 });
 CaseSchema.index({ status: 1 });
+CaseSchema.index({ paymentStatus: 1 }); // NEW: Index for payment status
 
 module.exports = mongoose.model('Case', CaseSchema);
