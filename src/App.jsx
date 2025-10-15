@@ -25,7 +25,7 @@ function App() {
         return <Sections />;
       case 'predict-bail':
         return <BailPredic />;
-      case 'find-lawyer': // Add Find Lawyer case
+      case 'find-lawyer':
         return <FindLawyer />;
       case 'registration':
         return <Registration setCurrentPage={setCurrentPage} />;

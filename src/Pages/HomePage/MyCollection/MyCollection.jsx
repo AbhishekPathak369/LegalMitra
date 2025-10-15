@@ -578,27 +578,51 @@ Generated via LegalMitra Case Management System
     </div>
   </div>
 );
+const createRazorpayOrder = async (amount) => {
+  try {
+    const token = localStorage.getItem('token');
+    console.log('💰 Creating Razorpay order for amount:', amount);
+    
+    const response = await fetch('http://localhost:5000/api/payment/create-order', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ 
+        amount: amount, // Razorpay expects amount in paise (₹999 * 100 = 99900)
+        currency: 'INR'
+      })
+    });
 
-  const createRazorpayOrder = async (amount) => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/payment/create-order', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ amount: amount })
-      });
-
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error('Error creating Razorpay order:', error);
-      return { success: false, error: 'Failed to create payment order' };
+    console.log('📦 Razorpay order response status:', response.status);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Server error response:', errorText);
+      return { 
+        success: false, 
+        error: `Server error: ${response.status} - ${errorText}` 
+      };
     }
-  };
 
+    const data = await response.json();
+    console.log('📦 Razorpay order response data:', data);
+    
+    if (data.order && data.order.id) {
+      return { success: true, order: data.order };
+    } else {
+      console.error('❌ Invalid order data:', data);
+      return { success: false, error: 'Invalid order data from server' };
+    }
+  } catch (error) {
+    console.error('💥 Error creating Razorpay order:', error);
+    return { 
+      success: false, 
+      error: `Network error: ${error.message}` 
+    };
+  }
+};
    const verifyPayment = async (paymentData) => {
   try {
     const token = localStorage.getItem('token');
@@ -634,79 +658,80 @@ Generated via LegalMitra Case Management System
   }
 };
 const initiatePayment = async (caseData) => {
-    try {
-      setPaymentLoading(true);
-      
-      const scriptLoaded = await loadRazorpayScript();
-      if (!scriptLoaded) {
-        alert('Razorpay SDK failed to load. Please check your internet connection.');
-        return;
-      }
-
-      const orderResponse = await createRazorpayOrder(500);
-      if (!orderResponse.success) {
-        alert('Failed to create payment order. Please try again.');
-        return;
-      }
-
-      const razorpayKey = 'rzp_test_RTOZnKCegnEMZB';
-      
-      const options = {
-        key: razorpayKey,
-        amount: orderResponse.order.amount,
-        currency: orderResponse.order.currency,
-        name: 'LegalMitra Case Management',
-        description: 'One-Time Case Registration Fee',
-        order_id: orderResponse.order.id,
-        handler: async function (response) {
-          console.log('🎯 Payment handler called:', response);
-          
-          const verificationResponse = await verifyPayment({
-            razorpay_order_id: response.razorpay_order_id,
-            razorpay_payment_id: response.razorpay_payment_id,
-            razorpay_signature: response.razorpay_signature
-          });
-
-          if (verificationResponse.success) {
-            // Payment verified and status updated in MongoDB
-            // Now submit the case
-            await submitCaseAfterPayment(caseData, verificationResponse.paymentId, response.razorpay_order_id);
-          } else {
-            alert('Payment verification failed. Please contact support.');
-          }
-        },
-        prefill: {
-          name: user?.name || '',
-          email: user?.email || '',
-          contact: user?.phone || ''
-        },
-        notes: {
-          case_name: caseData.caseName,
-          user_id: user?._id
-        },
-        theme: {
-          color: '#3399cc'
-        }
-      };
-
-      const rzp = new window.Razorpay(options);
-      
-      rzp.on('payment.failed', function (response) {
-        console.error('❌ Payment failed:', response.error);
-        alert(`Payment failed: ${response.error.description}`);
-        setPaymentLoading(false);
-      });
-
-      rzp.open();
-      
-    } catch (error) {
-      console.error('💥 Error in initiatePayment:', error);
-      alert('Error initiating payment. Please try again.');
-    } finally {
-      setPaymentLoading(false);
+  try {
+    setPaymentLoading(true);
+    
+    const scriptLoaded = await loadRazorpayScript();
+    if (!scriptLoaded) {
+      alert('Razorpay SDK failed to load. Please check your internet connection.');
+      return;
     }
-  };
 
+    // Create Razorpay order
+    const orderResponse = await createRazorpayOrder(999);
+    
+    if (!orderResponse.success) {
+      console.error('❌ Order creation failed:', orderResponse.error);
+      alert(`Failed to create payment order: ${orderResponse.error}. Please try again.`);
+      return;
+    }
+
+    const razorpayKey = 'rzp_test_RTOZnKCegnEMZB'; // Your test key
+    
+    const options = {
+      key: razorpayKey,
+      amount: orderResponse.order.amount,
+      currency: orderResponse.order.currency || 'INR',
+      name: 'LegalMitra Case Management',
+      description: 'One-Time Case Registration Fee',
+      order_id: orderResponse.order.id,
+      handler: async function (response) {
+        console.log('🎯 Payment handler called:', response);
+        
+        const verificationResponse = await verifyPayment({
+          razorpay_order_id: response.razorpay_order_id,
+          razorpay_payment_id: response.razorpay_payment_id,
+          razorpay_signature: response.razorpay_signature
+        });
+
+        if (verificationResponse.success) {
+          // Payment verified and status updated in MongoDB
+          await submitCaseAfterPayment(caseData, verificationResponse.paymentId, response.razorpay_order_id);
+        } else {
+          alert('Payment verification failed. Please contact support.');
+        }
+      },
+      prefill: {
+        name: user?.name || '',
+        email: user?.email || '',
+        contact: user?.phone || ''
+      },
+      notes: {
+        case_name: caseData.caseName,
+        user_id: user?._id
+      },
+      theme: {
+        color: '#3399cc'
+      }
+    };
+
+    const rzp = new window.Razorpay(options);
+    
+    rzp.on('payment.failed', function (response) {
+      console.error('❌ Payment failed:', response.error);
+      alert(`Payment failed: ${response.error.description}`);
+      setPaymentLoading(false);
+    });
+
+    rzp.open();
+    
+  } catch (error) {
+    console.error('💥 Error in initiatePayment:', error);
+    alert('Error initiating payment. Please try again.');
+  } finally {
+    setPaymentLoading(false);
+  }
+};
   const submitCaseAfterPayment = async (caseData, paymentId, razorpayOrderId) => {
     try {
       setIsLoading(true);
@@ -1036,83 +1061,90 @@ const initiatePayment = async (caseData) => {
   };
 
   const renderPaymentScreen = () => (
-    <div className="payment-overlay">
-      <div className="payment-modal">
-        <div className="payment-header">
-          <h3>One-Time Registration Fee</h3>
-          <button 
-            className="close-btn"
-            onClick={() => {
-              setShowPayment(false);
-              setCaseDataBeforePayment(null);
-            }}
-            disabled={paymentLoading}
-          >
-            ✕
-          </button>
+  <div className="payment-overlay">
+    <div className="payment-modal-new">
+      <div className="container">
+        <div className="header">
+          <h1>One-Time Registration Fee</h1>
+          <p>Pay once and add unlimited cases forever! No recurring fees.</p>
         </div>
         
-        <div className="payment-content">
-          <div className="payment-info">
-            <div className="payment-icon">🎉</div>
-            <h4>Unlimited Case Access</h4>
-            <p>Pay once and add unlimited cases forever! No recurring fees.</p>
-            
-            <div className="payment-features">
-              <div className="feature-item">
-                <span className="feature-icon">✅</span>
-                <span>One-time payment only</span>
-              </div>
-              <div className="feature-item">
-                <span className="feature-icon">✅</span>
-                <span>Unlimited case creation</span>
-              </div>
-              <div className="feature-item">
-                <span className="feature-icon">✅</span>
-                <span>Lifetime access</span>
-              </div>
+        <div className="card pricing-card">
+          <h2>Unlimited Case Access</h2>
+          <div className="price-tag">₹999</div>
+          <div className="price-period">One-time payment • Lifetime access</div>
+          
+          <ul className="features">
+            <li><i className="fas fa-check-circle"></i> Unlimited case creation</li>
+            <li><i className="fas fa-check-circle"></i> Priority support</li>
+            <li><i className="fas fa-check-circle"></i> Advanced analytics</li>
+           
+          </ul>
+          
+          
+        </div>
+        
+        <div className="card form-card">
+          <div className="payment-summary">
+            <h3>Payment Summary</h3>
+            <div className="payment-row">
+              <span>One-time registration fee:</span>
+              <span>₹999.00</span>
             </div>
-            
-            <div className="payment-amount">
-              <span className="amount-label">One-Time Fee:</span>
-              <span className="amount-value">₹500</span>
+            <div className="payment-row">
+              <span>Tax:</span>
+              <span>₹0.00</span>
+            </div>
+            <div className="payment-row">
+              <span>Total Amount:</span>
+              <span>₹999.00</span>
             </div>
           </div>
           
-          <div className="payment-actions">
-            <button 
-              className="pay-now-btn"
-              onClick={() => initiatePayment(caseDataBeforePayment)}
-              disabled={paymentLoading}
-            >
-              {paymentLoading ? (
-                <>
-                  <div className="loading-spinner-small"></div>
-                  Processing...
-                </>
-              ) : (
-                <>
-                  <span className="btn-icon">💳</span>
-                  Pay ₹500 Once
-                </>
-              )}
-            </button>
-            
-            <button 
-              className="cancel-payment-btn"
-              onClick={() => {
-                setShowPayment(false);
-                setCaseDataBeforePayment(null);
-              }}
-              disabled={paymentLoading}
-            >
-              Maybe Later
-            </button>
+          <div className="form-group">
+            <label style={{ display: 'flex', alignItems: 'flex-start', cursor: 'pointer' }}>
+              <input 
+                type="checkbox" 
+                style={{ marginRight: '10px', marginTop: '3px' }}
+                required
+              />
+              <span>I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a></span>
+            </label>
           </div>
+          
+          <button 
+            className="btn btn-primary"
+            onClick={() => initiatePayment(caseDataBeforePayment)}
+            disabled={paymentLoading}
+          >
+            {paymentLoading ? (
+              <>
+                <div className="loading-spinner-small"></div>
+                Processing...
+              </>
+            ) : (
+              'Pay Now - ₹999'
+            )}
+          </button>
+          
+          
         </div>
       </div>
+
+      {/* Close button */}
+      <button 
+        className="close-btn-new"
+        onClick={() => {
+          setShowPayment(false);
+          setCaseDataBeforePayment(null);
+        }}
+        disabled={paymentLoading}
+      >
+        ✕
+      </button>
     </div>
-  );
+  </div>
+);
 
   // Render Solved Cases Section
   const renderSolvedCasesSection = () => {
@@ -1122,6 +1154,7 @@ const initiatePayment = async (caseData) => {
 
     return (
       <div className="cases-section">
+
         <div className="section-header">
           <h2>
             {user?.role === 'lawyer' && 'Solved Cases'}
@@ -1375,7 +1408,7 @@ const initiatePayment = async (caseData) => {
                   </div>
                 </div>
 
-                <div className="detail-section full-width">
+                <div className="detail-section full-width" style={{color:'white'}}>
                   <h4>Case Description</h4>
                   <p>{caseItem.description}</p>
                 </div>
@@ -1810,6 +1843,7 @@ const renderContactPopup = () => {
 
           <div className="form-actions">
             <button type="submit" className="submit-btn" disabled={isLoading}>
+              {/* <span className="btn-icon">💼</span> */}
               {isLoading ? 'Creating...' : 'Create Case'}
             </button>
             <button 

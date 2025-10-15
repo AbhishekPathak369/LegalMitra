@@ -5,20 +5,34 @@
   box-sizing: border-box;
 }
 
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
 .App {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   width: 100%;
   overflow-x: hidden;
+  position: relative;
 }
 
-/* Add padding to main content to account for fixed header and navbar */
+/* Main content area - takes all available space */
 .main-content {
   flex: 1;
   width: 100%;
   margin: 0;
-  padding-top: 130px;
+  padding-top: 130px; /* Space for header + navbar */
+  padding-bottom: 0; /* Remove padding-bottom since footer is flex */
+}
+
+/* Footer will automatically stick to bottom due to flexbox */
+.footer {
+  flex-shrink: 0;
+  width: 100%;
 }
 
 /* Responsive padding */
@@ -58,24 +72,9 @@ body, html, #root, .App, .main-content, .homepage {
   padding-right: 0 !important;
 }
 
-/* ADD THIS TO YOUR EXISTING CSS */
-html, body {
-  height: 100%;
-  margin: 0;
-  padding: 0;
-}
-
-.App {
-  position: relative;
-  min-height: 100vh;
-}
-
-.main-content {
-  padding-bottom: 150px; /* Make space for footer */
-}
-
-.footer {
+/* Remove the old footer positioning */
+/* .footer {
   position: absolute;
   bottom: 0;
   width: 100%;
-}
+} */
