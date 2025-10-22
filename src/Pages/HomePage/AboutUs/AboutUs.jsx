@@ -1,7 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import './AboutUs.css';
+import ContactForm from './ContactForm';
 
 const AboutUs = () => {
+  const [isContactFormOpen, setIsContactFormOpen] = useState(false);
+
+  const openContactForm = () => setIsContactFormOpen(true);
+  const closeContactForm = () => setIsContactFormOpen(false);
+
   return (
     <div className="about-us-page">
       {/* Hero Section */}
@@ -78,7 +84,7 @@ const AboutUs = () => {
             <div className="founder-card">
               <div className="founder-image">
                 <div className="image-placeholder">
-                  <span className="initials">AS</span>
+                  <span className="initials">AM</span>
                 </div>
                 <div className="founder-badge">Co-Founder</div>
               </div>
@@ -250,11 +256,16 @@ const AboutUs = () => {
             <p>Be part of India's growing community of legal innovators and empowered citizens</p>
             <div className="cta-buttons">
               <button className="cta-btn primary">Get Started Today</button>
-              <button className="cta-btn secondary">Contact Our Team</button>
+              <button className="cta-btn secondary" onClick={openContactForm}>
+                Contact Our Team
+              </button>
             </div>
           </div>
         </div>
       </section>
+
+      {/* Contact Form Popup */}
+      <ContactForm isOpen={isContactFormOpen} onClose={closeContactForm} />
     </div>
   );
 };

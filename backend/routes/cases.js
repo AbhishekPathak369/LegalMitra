@@ -336,6 +336,80 @@ router.delete("/:id", protect, async (req, res) => {
   }
 });
 
+// Create client case after payment
+router.post('/client/create-after-payment', protect, async (req, res) => {
+  try {
+    const { caseData, paymentId, razorpayOrderId } = req.body;
+    
+    console.log('📦 Creating client case after payment:', {
+      caseName: caseData.caseName,
+      paymentId: paymentId,
+      userId: req.user.id
+    });
+
+    const newCase = new Case({
+      ...caseData,
+      userId: req.user.id,
+      paymentId: paymentId,
+      razorpayOrderId: razorpayOrderId,
+      createdBy: req.user.id
+    });
+
+    const savedCase = await newCase.save();
+    
+    console.log('✅ Client case created after payment:', savedCase._id);
+
+    res.status(201).json({
+      success: true,
+      case: savedCase
+    });
+  } catch (error) {
+    console.error('❌ Error creating client case after payment:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to create case: ' + error.message
+    });
+  }
+});
+
+// Create client case (direct - for already paid users)
+router.post('/client/create', protect, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    
+    // Check if client has paid
+    if (!user.hasPaid) {
+      return res.status(402).json({
+        success: false,
+        error: 'Payment required to add cases'
+      });
+    }
+
+    console.log('📦 Creating client case for paid user:', req.user.id);
+
+    const newCase = new Case({
+      ...req.body,
+      userId: req.user.id,
+      createdBy: req.user.id
+    });
+
+    const savedCase = await newCase.save();
+    
+    console.log('✅ Client case created:', savedCase._id);
+
+    res.status(201).json({
+      success: true,
+      case: savedCase
+    });
+  } catch (error) {
+    console.error('❌ Error creating client case:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to create case: ' + error.message
+    });
+  }
+});
+
 // Get case by ID
 router.get("/:id", protect, async (req, res) => {
   try {

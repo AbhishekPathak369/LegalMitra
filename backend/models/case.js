@@ -55,7 +55,7 @@ const CaseSchema = new mongoose.Schema({
   },
   paymentAmount: { 
     type: Number, 
-    default: 500 
+    default: 1799 
   },
   razorpayOrderId: {
     type: String,

@@ -82,6 +82,13 @@ const NewHeader = ({ setCurrentPage }) => {
     border: `2px solid ${NAVY_BLUE}`,
   };
 
+  const adminLoginStyle = {
+    ...buttonStyle,
+    backgroundColor: 'transparent',
+    color: '#fbbf24',
+    border: `2px solid #fbbf24`,
+  };
+
   const userMenuStyle = {
     position: 'relative',
   };
@@ -134,6 +141,10 @@ const NewHeader = ({ setCurrentPage }) => {
   const handleLoginClick = () => {
     setCurrentPage('login');
   };
+
+  const handleAdminLoginClick = () => {
+    setCurrentPage('admin-login');
+  };
   
   const handleLogoClick = () => {
     setCurrentPage('home'); 
@@ -147,7 +158,12 @@ const NewHeader = ({ setCurrentPage }) => {
 
   const handleProfileClick = () => {
     setDropdownOpen(false);
-    setCurrentPage('my-collection');
+    setCurrentPage('profile');
+  };
+
+  const handleAdminDashboardClick = () => {
+    setDropdownOpen(false);
+    setCurrentPage('admin-dashboard');
   };
 
   return (
@@ -186,6 +202,14 @@ const NewHeader = ({ setCurrentPage }) => {
                 >
                   My Profile
                 </button>
+                {user.role === 'admin' && (
+                  <button 
+                    style={dropdownItemStyle}
+                    onClick={handleAdminDashboardClick}
+                  >
+                    🛠️ Admin Dashboard
+                  </button>
+                )}
                 <button 
                   style={dropdownItemStyle}
                   onClick={handleLogout}
@@ -199,6 +223,7 @@ const NewHeader = ({ setCurrentPage }) => {
           <>
             <button style={loginStyle} onClick={handleLoginClick}>Login</button>
             <button style={signupStyle} onClick={handleSignUpClick}>Sign Up</button>
+            <button style={adminLoginStyle} onClick={handleAdminLoginClick}>Admin Login</button>
           </>
         )}
       </div>

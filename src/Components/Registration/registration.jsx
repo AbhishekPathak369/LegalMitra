@@ -8,7 +8,13 @@ const Registration = ({ setCurrentPage }) => {
     name: '',
     email: '',
     password: '',
-    role: ''
+    role: '',
+    // Lawyer-specific fields
+    specialization: '',
+    experience: '',
+    barCouncilNumber: '',
+    phone: '',
+    address: ''
   });
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
@@ -56,6 +62,21 @@ const Registration = ({ setCurrentPage }) => {
       newErrors.role = 'Please select a role';
     }
 
+    // Lawyer-specific validations
+    if (formData.role === 'lawyer') {
+      if (!formData.specialization) {
+        newErrors.specialization = 'Specialization is required';
+      }
+      if (!formData.experience) {
+        newErrors.experience = 'Experience is required';
+      } else if (formData.experience < 0) {
+        newErrors.experience = 'Experience cannot be negative';
+      }
+      if (!formData.barCouncilNumber) {
+        newErrors.barCouncilNumber = 'Bar Council Number is required';
+      }
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -98,12 +119,27 @@ const Registration = ({ setCurrentPage }) => {
     }
   };
 
+  const specializations = [
+    'Criminal Law',
+    'Civil Law',
+    'Corporate Law',
+    'Family Law',
+    'Property Law',
+    'Labor Law',
+    'Tax Law',
+    'Cyber Law',
+    'Intellectual Property',
+    'Consumer Law',
+    'Constitutional Law',
+    'Environmental Law'
+  ];
+
   return (
     <div className="registration-container">
       <div className="registration-card">
         <div className="registration-hero">
           <div className="hero-content">
-            <img src={logo} height={100} width={100}></img>
+            <img src={logo} height={100} width={100} alt="LegalMitra Logo" />
             <h1>Join LegalMitra</h1>
             <p>Your trusted legal partner for comprehensive legal solutions</p>
             <div className="features">
@@ -128,11 +164,10 @@ const Registration = ({ setCurrentPage }) => {
             ← Back to Home
           </button>
           
-          
           <div className="form-header" style={{ display: 'block' }}>
-  <h2 style={{ display: 'block' }}>Create Account</h2>
-  <p style={{ display: 'block' }}>Sign up to get started with LegalMitra</p>
-</div>
+            <h2 style={{ display: 'block' }}>Create Account</h2>
+            <p style={{ display: 'block' }}>Sign up to get started with LegalMitra</p>
+          </div>
 
           {message && (
             <div className={`message ${message.includes('successful') ? 'success' : 'error'}`}>
@@ -185,18 +220,93 @@ const Registration = ({ setCurrentPage }) => {
                 onChange={handleChange}
               >
                 <option value="">Select Role</option>
-                <option value="client">User</option>
+                <option value="client">Client</option>
                 <option value="lawyer">Lawyer</option>
-                
+               
               </select>
               {errors.role && <span className="error-text">{errors.role}</span>}
             </div>
+
+            {/* Lawyer-specific fields - only show when role is lawyer */}
+            {formData.role === 'lawyer' && (
+              <div className="lawyer-fields">
+                <div className="form-section-divider">
+                  <span>Professional Information</span>
+                </div>
+                
+                <div className="form-group">
+                  <label htmlFor="specialization">Specialization</label>
+                  <select 
+                    id="specialization" 
+                    value={formData.specialization}
+                    onChange={handleChange}
+                  >
+                    <option value="">Select Specialization</option>
+                    {specializations.map(spec => (
+                      <option key={spec} value={spec}>{spec}</option>
+                    ))}
+                  </select>
+                  {errors.specialization && <span className="error-text">{errors.specialization}</span>}
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="experience">Years of Experience</label>
+                    <input 
+                      type="number" 
+                      id="experience" 
+                      placeholder="e.g., 5"
+                      min="0"
+                      max="50"
+                      value={formData.experience}
+                      onChange={handleChange}
+                    />
+                    {errors.experience && <span className="error-text">{errors.experience}</span>}
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="phone">Phone Number</label>
+                    <input 
+                      type="tel" 
+                      id="phone" 
+                      placeholder="Enter phone number"
+                      value={formData.phone}
+                      onChange={handleChange}
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="barCouncilNumber">Bar Council Number</label>
+                  <input 
+                    type="text" 
+                    id="barCouncilNumber" 
+                    placeholder="e.g., MH/1254/2020"
+                    value={formData.barCouncilNumber}
+                    onChange={handleChange}
+                  />
+                  {errors.barCouncilNumber && <span className="error-text">{errors.barCouncilNumber}</span>}
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="address">Office Address</label>
+                  <textarea 
+                    id="address" 
+                    placeholder="Enter your office address..."
+                    rows="3"
+                    value={formData.address}
+                    onChange={handleChange}
+                  />
+                </div>
+
+                
+              </div>
+            )}
             
             <button 
               type="submit" 
               className="submit-btn"
               disabled={isLoading}
-              
             >
               {isLoading ? 'Creating Account...' : 'Create Account'}
             </button>

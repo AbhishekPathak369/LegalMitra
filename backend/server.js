@@ -1,32 +1,63 @@
-const express = require("express");
-const mongoose = require("mongoose");
-const cors = require("cors");
-require("dotenv").config();
+  const express = require("express");
+  const mongoose = require("mongoose");
+  const cors = require("cors");
 
-const app = express();
+  require("dotenv").config();
 
-// Middleware
-app.use(cors());
-app.use(express.json());
+  const app = express();
 
-// MongoDB connection
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => console.log("✅ Connected to MongoDB Atlas"))
-.catch(err => console.log("❌ MongoDB connection error:", err));
+  // ✅ MIDDLEWARE
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: true }));
+  app.use(cors({
+      origin: "http://localhost:3000", // Your frontend URL
+      credentials: true,
+      methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Authorization", "Accept"]
+  }));
 
-// Import routes
-const authRoutes = require("./routes/auth");
-const caseRoutes = require("./routes/cases");
-const paymentRoutes = require("./routes/payment"); // Add this line
+  // ✅ IMPORT ALL ROUTES ONCE
+  const authRoutes = require("./routes/auth");
+  const caseRoutes = require("./routes/cases");
+  const paymentRoutes = require("./routes/payment");
+  const verificationRoutes = require("./routes/verification");
+  const adminRoutes = require('./routes/admin');
+  const lawyerRoutes = require('./routes/lawyer'); // ✅ ADD THIS
 
-// Use routes
-app.use("/api/auth", authRoutes);
-app.use("/api/cases", caseRoutes);
-app.use("/api/payment", paymentRoutes); // Add this line
+  // ✅ REGISTER ALL ROUTES ONCE
+  app.use("/api/auth", authRoutes);
+  app.use("/api/cases", caseRoutes);
+  app.use("/api/payment", paymentRoutes);
+  app.use("/api/verification", verificationRoutes);
+  app.use('/api/admin', adminRoutes);
+  app.use('/api/lawyer', lawyerRoutes); // ✅ ADD THIS
 
-// Server start
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+  // MongoDB connection
+  mongoose.connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => console.log("✅ Connected to MongoDB Atlas"))
+  .catch(err => console.log("❌ MongoDB connection error:", err));
+
+  // ✅ TEST ROUTE (keep this)
+  app.get('/api/test', (req, res) => {
+    res.json({ 
+      success: true, 
+      message: 'Backend is working!',
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  // MongoDB connection
+  mongoose.connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => console.log("✅ Connected to MongoDB Atlas"))
+  .catch(err => console.log("❌ MongoDB connection error:", err));
+
+
+  // Server start
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));

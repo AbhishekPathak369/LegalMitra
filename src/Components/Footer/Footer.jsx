@@ -21,11 +21,11 @@ const Footer = () => {
           <div className="footer-column">
             <h4>Important Links</h4>
             <div className="footer-links">
-              <a href="https://legalaffairs.gov.in/">🏛️ Ministry of Law & Justice</a>
-              <a href="https://districts.ecourts.gov.in/">⚖️ eCourts Services</a>
+              <a href="https://legalaffairs.gov.in/">🏛 Ministry of Law & Justice</a>
+              <a href="https://districts.ecourts.gov.in/">⚖ eCourts Services</a>
               <a href="https://www.legalservicesindia.com/">📜 Legal Services India</a>
-              <a href="https://nalsa.gov.in/">🛡️ NALSA</a>
-              <a href="https://main.sci.gov.in/">🏛️ Supreme Court of India</a>
+              <a href="https://nalsa.gov.in/">🛡 NALSA</a>
+              <a href="https://main.sci.gov.in/">🏛 Supreme Court of India</a>
             </div>
           </div>
 

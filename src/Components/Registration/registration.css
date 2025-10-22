@@ -471,3 +471,236 @@ form {
 .form-group:last-of-type {
   animation-delay: 0.3s;
 }
+
+/* Lawyer-specific fields - Dark Theme */
+.lawyer-fields {
+  margin: 1.5rem 0;
+  padding: 1.5rem;
+  background: rgba(15, 23, 42, 0.4);
+  border-radius: 12px;
+  border: 1px solid rgba(96, 165, 250, 0.2);
+  backdrop-filter: blur(10px);
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.form-section-divider {
+  text-align: center;
+  margin: 1rem 0 1.5rem 0;
+  position: relative;
+}
+
+.form-section-divider::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: rgba(96, 165, 250, 0.3);
+}
+
+.form-section-divider span {
+  background: #1e293b;
+  padding: 0 1rem;
+  color: #60a5fa;
+  font-weight: 600;
+  font-size: 0.9rem;
+  position: relative;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+/* Verification notice - Dark Theme */
+.verification-notice {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  background: rgba(251, 191, 36, 0.1);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  border-radius: 8px;
+  margin-top: 1rem;
+  backdrop-filter: blur(10px);
+}
+
+.notice-icon {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.notice-content strong {
+  color: #fbbf24;
+  display: block;
+  margin-bottom: 0.3rem;
+}
+
+.notice-content p {
+  color: #fef3c7;
+  font-size: 0.85rem;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Textarea styling - Dark Theme */
+.form-group textarea {
+  width: 100%;
+  background: rgba(15, 23, 42, 0.8);
+  border: 2px solid rgba(100, 116, 139, 0.3);
+  border-radius: 10px;
+  padding: 1rem;
+  color: #f8fafc;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  resize: vertical;
+  min-height: 80px;
+  font-family: inherit;
+}
+
+.form-group textarea:focus {
+  outline: none;
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
+  background: rgba(15, 23, 42, 0.9);
+}
+
+.form-group textarea::placeholder {
+  color: #64748b;
+}
+
+/* Number input styling */
+.form-group input[type="number"] {
+  width: 100%;
+  background: rgba(15, 23, 42, 0.8);
+  border: 2px solid rgba(100, 116, 139, 0.3);
+  border-radius: 10px;
+  padding: 1rem;
+  color: #f8fafc;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.form-group input[type="number"]:focus {
+  outline: none;
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
+  background: rgba(15, 23, 42, 0.9);
+}
+
+.form-group input[type="number"]::placeholder {
+  color: #64748b;
+}
+
+/* Tel input styling */
+.form-group input[type="tel"] {
+  width: 100%;
+  background: rgba(15, 23, 42, 0.8);
+  border: 2px solid rgba(100, 116, 139, 0.3);
+  border-radius: 10px;
+  padding: 1rem;
+  color: #f8fafc;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.form-group input[type="tel"]:focus {
+  outline: none;
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
+  background: rgba(15, 23, 42, 0.9);
+}
+
+.form-group input[type="tel"]::placeholder {
+  color: #64748b;
+}
+
+/* Responsive design for form rows */
+@media (max-width: 768px) {
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  
+  .lawyer-fields {
+    padding: 1rem;
+    margin: 1rem 0;
+  }
+  
+  .verification-notice {
+    flex-direction: column;
+    text-align: center;
+    gap: 0.5rem;
+  }
+}
+
+/* Animation delays for lawyer fields */
+.lawyer-fields .form-group:nth-child(1) { animation-delay: 0.1s; }
+.lawyer-fields .form-group:nth-child(2) { animation-delay: 0.2s; }
+.lawyer-fields .form-group:nth-child(3) { animation-delay: 0.3s; }
+.lawyer-fields .form-group:nth-child(4) { animation-delay: 0.4s; }
+.lawyer-fields .verification-notice { animation-delay: 0.5s; }
+
+/* Smooth transition for lawyer fields appearance */
+.lawyer-fields {
+  transition: all 0.3s ease;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Ensure consistent select styling for lawyer specialization */
+.lawyer-fields .form-group select {
+  width: 100%;
+  background: rgba(15, 23, 42, 0.8);
+  border: 2px solid rgba(100, 116, 139, 0.3);
+  border-radius: 10px;
+  padding: 1rem;
+  color: #f8fafc;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+  
+  /* Remove default arrow and add custom one */
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2364748b' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 1rem center;
+  background-repeat: no-repeat;
+  background-size: 1.2em;
+  padding-right: 2.5rem;
+}
+
+.lawyer-fields .form-group select:focus {
+  outline: none;
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
+  background: rgba(15, 23, 42, 0.9);
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2360a5fa' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+}
+
+.lawyer-fields .form-group select:hover {
+  border-color: rgba(96, 165, 250, 0.5);
+}
+
+/* Option styling for dark theme */
+.lawyer-fields .form-group select option {
+  background: #1e293b;
+  color: #f8fafc;
+  padding: 1rem;
+  border: none;
+}
+
+.lawyer-fields .form-group select option:checked {
+  background: rgba(96, 165, 250, 0.2);
+  color: #60a5fa;
+}
+
+.lawyer-fields .form-group select option:hover {
+  background: rgba(96, 165, 250, 0.3);
+}

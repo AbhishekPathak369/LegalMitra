@@ -9,10 +9,52 @@ export const useAuth = () => {
   }
   return context;
 };
+const ProfilePage = () => {
+  const { user, loading } = useAuth();
+
+  // Add loading state
+  if (loading) {
+    return (
+      <div style={{ 
+        maxWidth: '800px', 
+        margin: '100px auto 50px', 
+        padding: '30px', 
+        textAlign: 'center' 
+      }}>
+        <div>Loading profile...</div>
+      </div>
+    );
+  }
+
+  // Rest of your component...
+};
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const refreshUser = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const response = await fetch('http://localhost:5000/api/auth/me', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setUser(data.user);
+          localStorage.setItem('user', JSON.stringify(data.user));
+        }
+      }
+    } catch (error) {
+      console.error('Error refreshing user:', error);
+    }
+  };
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -20,6 +62,8 @@ export const AuthProvider = ({ children }) => {
     
     if (token && userData) {
       setUser(JSON.parse(userData));
+      // Refresh user data on app load to get latest payment status
+      refreshUser();
     }
     setLoading(false);
   }, []);
@@ -40,7 +84,8 @@ export const AuthProvider = ({ children }) => {
     user,
     login,
     logout,
-    loading
+    loading,
+    refreshUser // ✅ Add this function
   };
 
   return (
