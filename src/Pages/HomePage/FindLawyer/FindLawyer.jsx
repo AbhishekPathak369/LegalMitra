@@ -13,6 +13,9 @@ const FindLawyer = () => {
   const [selectedRating, setSelectedRating] = useState('');
   const [sortBy, setSortBy] = useState('');
   const [loading, setLoading] = useState(true);
+  
+  // NEW STATE FOR PAGINATION
+  const [otherLawyersToShow, setOtherLawyersToShow] = useState(10);
 
   // Fetch team lawyers from backend
   const fetchTeamLawyers = async () => {
@@ -55,7 +58,7 @@ const FindLawyer = () => {
         
         // Set other lawyers as static data
         setOtherLawyers(lawyersData);
-        setFilteredOtherLawyers(lawyersData);
+        setFilteredOtherLawyers(lawyersData.slice(0, 10)); // Show only 10 initially
         
         // Combine for all lawyers view if needed
         setAllLawyers([...transformedTeamLawyers, ...lawyersData]);
@@ -63,14 +66,14 @@ const FindLawyer = () => {
         console.warn('⚠️ No team lawyers found or API error');
         // Fallback to static data only
         setOtherLawyers(lawyersData);
-        setFilteredOtherLawyers(lawyersData);
+        setFilteredOtherLawyers(lawyersData.slice(0, 10)); // Show only 10 initially
         setAllLawyers(lawyersData);
       }
     } catch (error) {
       console.error('❌ Error fetching team lawyers:', error);
       // Fallback to static data on error
       setOtherLawyers(lawyersData);
-      setFilteredOtherLawyers(lawyersData);
+      setFilteredOtherLawyers(lawyersData.slice(0, 10)); // Show only 10 initially
       setAllLawyers(lawyersData);
     } finally {
       setLoading(false);
@@ -80,12 +83,17 @@ const FindLawyer = () => {
   useEffect(() => {
     // Initial load with static data
     setOtherLawyers(lawyersData);
-    setFilteredOtherLawyers(lawyersData);
+    setFilteredOtherLawyers(lawyersData.slice(0, 10)); // Show only 10 initially
     setAllLawyers(lawyersData);
     
     // Fetch team lawyers from API
     fetchTeamLawyers();
   }, []);
+
+  // NEW FUNCTION TO LOAD MORE OTHER LAWYERS
+  const loadMoreOtherLawyers = () => {
+    setOtherLawyersToShow(prev => prev + 10); // Load 10 more lawyers
+  };
 
   // Apply filters to both sections
   useEffect(() => {
@@ -141,15 +149,22 @@ const FindLawyer = () => {
 
     // Apply filters to both sections
     setFilteredTeamLawyers(applyFilters(teamLawyers));
-    setFilteredOtherLawyers(applyFilters(otherLawyers));
+    const filteredOther = applyFilters(otherLawyers);
+    setFilteredOtherLawyers(filteredOther.slice(0, otherLawyersToShow)); // Apply pagination
     
-  }, [selectedState, selectedSpeciality, selectedRating, sortBy, teamLawyers, otherLawyers]);
+  }, [selectedState, selectedSpeciality, selectedRating, sortBy, teamLawyers, otherLawyers, otherLawyersToShow]);
+
+  // Reset pagination when filters change
+  useEffect(() => {
+    setOtherLawyersToShow(10);
+  }, [selectedState, selectedSpeciality, selectedRating, sortBy]);
 
   const resetFilters = () => {
     setSelectedState('');
     setSelectedSpeciality('');
     setSelectedRating('');
     setSortBy('');
+    setOtherLawyersToShow(10); // Reset pagination
   };
 
   const states = [...new Set(allLawyers.map(lawyer => lawyer.location))];
@@ -176,7 +191,7 @@ const FindLawyer = () => {
     <div key={lawyer.id} className="dark-card">
       <div className="card-glow"></div>
       
-      {/* Team Lawyer Badge */}
+      {/* Team Lawyer Badge - Only yellow badge for LegalMitra lawyers */}
       {isTeamLawyer && (
         <div className="team-lawyer-badge">
           <span className="badge-icon">⭐</span>
@@ -184,10 +199,13 @@ const FindLawyer = () => {
         </div>
       )}
       
-      <div className="verified-badge">
-        <span className="badge-icon">✓</span>
-        LegalMitra Verified
-      </div>
+      {/* Verified Badge - Only show for non-team lawyers */}
+      {!isTeamLawyer && (
+        <div className="verified-badge">
+          <span className="badge-icon">✓</span>
+          LegalMitra Verified
+        </div>
+      )}
       
       <div className="card-header">
         <div className="avatar-container">
@@ -379,14 +397,16 @@ const FindLawyer = () => {
         <>
           {/* Section 1: LegalMitra Team Lawyers */}
           <div className="lawyers-section team-lawyers-section">
-            <div className="section-header">
-              <h2>
-                <span className="section-icon">⭐</span>
-                LegalMitra Team Lawyers
-              </h2>
-              <p>Verified professionals who are officially part of our legal network</p>
-              <div className="section-stats">
-                Showing {filteredTeamLawyers.length} of {teamLawyers.length} team lawyers
+            <div className="section-header-wrapper">
+              <div className="section-header-content">
+                <h2>
+                  <span className="section-icon">⭐</span>
+                  LegalMitra Team Lawyers
+                </h2>
+                <p>Verified professionals who are officially part of our legal network</p>
+                <div className="section-stats">
+                  Showing {filteredTeamLawyers.length} of {teamLawyers.length} team lawyers
+                </div>
               </div>
             </div>
 
@@ -407,23 +427,39 @@ const FindLawyer = () => {
 
           {/* Section 2: Other Verified Lawyers */}
           <div className="lawyers-section other-lawyers-section">
-            <div className="section-header">
-              <h2>
-                <span className="section-icon">⚖️</span>
-                Other Verified Lawyers
-              </h2>
-              <p>Additional legal professionals available for consultation</p>
-              <div className="section-stats">
-                Showing {filteredOtherLawyers.length} of {otherLawyers.length} lawyers
+            <div className="section-header-wrapper">
+              <div className="section-header-content">
+                <h2>
+                  <span className="section-icon">⚖️</span>
+                  Other Verified Lawyers
+                </h2>
+                <p>Additional legal professionals available for consultation</p>
+                <div className="section-stats">
+                  Showing {filteredOtherLawyers.length} of {otherLawyers.length} lawyers
+                </div>
               </div>
             </div>
 
             {filteredOtherLawyers.length > 0 ? (
-              <div className="dark-grid">
-                {filteredOtherLawyers.map((lawyer) => (
-                  <LawyerCard key={lawyer.id} lawyer={lawyer} isTeamLawyer={false} />
-                ))}
-              </div>
+              <>
+                <div className="dark-grid">
+                  {filteredOtherLawyers.map((lawyer) => (
+                    <LawyerCard key={lawyer.id} lawyer={lawyer} isTeamLawyer={false} />
+                  ))}
+                </div>
+                
+                {/* Load More Button for Other Lawyers */}
+                {filteredOtherLawyers.length < otherLawyers.length && (
+                  <div className="load-more-container">
+                    <button 
+                      className="load-more-btn"
+                      onClick={loadMoreOtherLawyers}
+                    >
+                      Show 10 More Lawyers ({filteredOtherLawyers.length} of {otherLawyers.length} shown)
+                    </button>
+                  </div>
+                )}
+              </>
             ) : (
               <div className="no-results">
                 <div className="no-results-icon">🔍</div>
