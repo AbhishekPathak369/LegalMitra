@@ -1,63 +1,56 @@
-  const express = require("express");
-  const mongoose = require("mongoose");
-  const cors = require("cors");
+const express = require("express");
+const mongoose = require("mongoose");
+const cors = require("cors");
 
-  require("dotenv").config();
+require("dotenv").config();
 
-  const app = express();
+const app = express();
 
-  // ✅ MIDDLEWARE
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: true }));
-  app.use(cors({
-      origin: "http://localhost:3000", // Your frontend URL
-      credentials: true,
-      methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-      allowedHeaders: ["Content-Type", "Authorization", "Accept"]
-  }));
+// ✅ MIDDLEWARE
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cors({
+    origin: "http://localhost:3000", // Your frontend URL
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "Accept"]
+}));
 
-  // ✅ IMPORT ALL ROUTES ONCE
-  const authRoutes = require("./routes/auth");
-  const caseRoutes = require("./routes/cases");
-  const paymentRoutes = require("./routes/payment");
-  const verificationRoutes = require("./routes/verification");
-  const adminRoutes = require('./routes/admin');
-  const lawyerRoutes = require('./routes/lawyer'); // ✅ ADD THIS
+// ✅ IMPORT ALL ROUTES
+const authRoutes = require("./routes/auth");
+const caseRoutes = require("./routes/cases");
+const paymentRoutes = require("./routes/payment");
+const verificationRoutes = require("./routes/verification");
+const adminRoutes = require('./routes/admin');
+const lawyerRoutes = require('./routes/lawyer');
+const requestRoutes = require('./routes/requests'); // ✅ ADD THIS LINE
 
-  // ✅ REGISTER ALL ROUTES ONCE
-  app.use("/api/auth", authRoutes);
-  app.use("/api/cases", caseRoutes);
-  app.use("/api/payment", paymentRoutes);
-  app.use("/api/verification", verificationRoutes);
-  app.use('/api/admin', adminRoutes);
-  app.use('/api/lawyer', lawyerRoutes); // ✅ ADD THIS
+// ✅ REGISTER ALL ROUTES
+app.use("/api/auth", authRoutes);
+app.use("/api/cases", caseRoutes);
+app.use("/api/payment", paymentRoutes);
+app.use("/api/verification", verificationRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/lawyer', lawyerRoutes);
+app.use('/api/requests', requestRoutes); // ✅ ADD THIS LINE
 
-  // MongoDB connection
-  mongoose.connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-  .then(() => console.log("✅ Connected to MongoDB Atlas"))
-  .catch(err => console.log("❌ MongoDB connection error:", err));
+// MongoDB connection
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(() => console.log("✅ Connected to MongoDB Atlas"))
+.catch(err => console.log("❌ MongoDB connection error:", err));
 
-  // ✅ TEST ROUTE (keep this)
-  app.get('/api/test', (req, res) => {
-    res.json({ 
-      success: true, 
-      message: 'Backend is working!',
-      timestamp: new Date().toISOString()
-    });
+// ✅ TEST ROUTE (keep this)
+app.get('/api/test', (req, res) => {
+  res.json({ 
+    success: true, 
+    message: 'Backend is working!',
+    timestamp: new Date().toISOString()
   });
+});
 
-  // MongoDB connection
-  mongoose.connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-  .then(() => console.log("✅ Connected to MongoDB Atlas"))
-  .catch(err => console.log("❌ MongoDB connection error:", err));
-
-
-  // Server start
-  const PORT = process.env.PORT || 5000;
-  app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+// Server start
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));

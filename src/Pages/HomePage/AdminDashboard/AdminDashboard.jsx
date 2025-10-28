@@ -1934,6 +1934,7 @@ const UserManagement = ({ users, onUpdateUserStatus }) => {
      const [updatingStatus, setUpdatingStatus] = useState(null); // Track which user is being updated
 
 
+     const { user: currentAdmin } = useAuth(); // Get current admin user
      console.log('🔍 UserManagement - All users data:', users);
     // Debug: Check what props we're getting
     console.log('🔍 UserManagement props:', { users, onUpdateUserStatus });
@@ -1943,7 +1944,15 @@ const UserManagement = ({ users, onUpdateUserStatus }) => {
         user.email?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+   // Check if a user row is the current admin
+    const isCurrentAdminRow = (user) => {
+        return user.email === 'admin@lawconnect.com';
+    };
+
     const toggleUserStatus = async (user) => {
+        
+
+
     const userId = user.id || user._id;
     const currentStatus = user.status || (user.isActive ? 'Active' : 'Inactive');
     
@@ -2058,12 +2067,15 @@ const UserManagement = ({ users, onUpdateUserStatus }) => {
                                 <th>Status</th>
                                 <th>Joined</th>
                                 <th>Actions</th>
+                                
                             </tr>
                         </thead>
                         <tbody>
                             {filteredUsers.map(user => {
                                 const status = user.status || (user.isActive ? 'Active' : 'Inactive');
                                 const isUpdating = updatingStatus === (user.id || user._id);
+                                 const isAdminRow = isCurrentAdminRow(user);
+                                const buttonsDisabled = isAdminRow || isUpdating;
                                 return (
                                     <tr key={user.id || user._id}>
                                         <td>
@@ -2072,6 +2084,9 @@ const UserManagement = ({ users, onUpdateUserStatus }) => {
                                                     {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
                                                 </div>
                                                 <span>{user.name}</span>
+                                                 {isAdminRow && (
+                                                    <span className="admin-badge">👑</span>
+                                                )}
                                             </div>
                                         </td>
                                         <td>{user.email}</td>
@@ -2088,11 +2103,13 @@ const UserManagement = ({ users, onUpdateUserStatus }) => {
                                         </td>
                                         <td>{user.joined}</td>
                                         <td>
+                                            
                                             <div className="action-buttons-small">
-                                                <button 
-                                                    className={`action-btn small ${status === 'Active' ? 'danger' : 'success'}`}
-                                                    onClick={() => toggleUserStatus(user)}
-                                                    disabled={isUpdating}
+                                                                                                <button 
+                                                    className={`action-btn small ${status === 'Active' ? 'danger' : 'success'} ${buttonsDisabled ? 'disabled' : ''}`}
+                                                    onClick={() => isAdminRow ? alert('❌ Cannot modify admin user status') : toggleUserStatus(user)}
+                                                    disabled={buttonsDisabled}
+                                                    title={isAdminRow ? "Cannot modify admin user" : ""}
                                                 >
                                                     {isUpdating ? (
                                                         <>
@@ -2104,12 +2121,16 @@ const UserManagement = ({ users, onUpdateUserStatus }) => {
                                                     )}
                                                 </button>
                                                 <button 
-                                                    className="action-btn small primary"
-                                                    onClick={() => handleViewUser(user)}
+                                                    className={`action-btn small primary ${buttonsDisabled ? 'disabled' : ''}`}
+                                                    onClick={() => isAdminRow ? alert('❌ Cannot view admin user profile') : handleViewUser(user)}
+                                                    disabled={buttonsDisabled}
+                                                    title={isAdminRow ? "Cannot view admin user profile" : ""}
                                                 >
                                                     View
                                                 </button>
+
                                             </div>
+                                            
                                         </td>
                                     </tr>
                                 );

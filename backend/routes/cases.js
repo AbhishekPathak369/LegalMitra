@@ -4,6 +4,99 @@ const Case = require("../models/Case");
 const User = require("../models/User");
 const { protect } = require("../middleware/auth");
 
+
+
+// In routes/cases.js - Add this route
+// Update client payment status - ENHANCED ERROR HANDLING
+router.put('/:id/client-payment', protect, async (req, res) => {
+  try {
+    console.log('📥 Received client payment update:', {
+      caseId: req.params.id,
+      body: req.body,
+      user: req.user.id
+    });
+
+    const { status, amountPaid, agreedAmount, dueDate, paymentNotes } = req.body;
+    
+    // Validate required fields
+    if (!status) {
+      return res.status(400).json({ 
+        success: false, 
+        error: "Payment status is required" 
+      });
+    }
+
+    // Validate status enum
+    const validStatuses = ['unpaid', 'partially_paid', 'paid', 'overdue', 'refunded'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        error: `Invalid status. Must be one of: ${validStatuses.join(', ')}`
+      });
+    }
+
+    // Build update object
+    const updateData = {
+      $set: {
+        'clientPayment.status': status,
+        'clientPayment.amountPaid': amountPaid || 0,
+        'clientPayment.lastPaymentDate': (status === 'paid' || status === 'partially_paid') ? new Date() : undefined
+      }
+    };
+
+    // Add optional fields if provided
+    if (agreedAmount !== undefined) {
+      updateData.$set['clientPayment.agreedAmount'] = agreedAmount;
+    }
+    if (dueDate) {
+      updateData.$set['clientPayment.dueDate'] = dueDate;
+    }
+
+    // Add payment history if payment was made
+    if ((status === 'paid' || status === 'partially_paid') && amountPaid > 0) {
+      updateData.$push = {
+        'clientPayment.paymentHistory': {
+          amount: amountPaid,
+          date: new Date(),
+          method: 'manual',
+          notes: paymentNotes || `Payment updated to ${status}`
+        }
+      };
+    }
+
+    console.log('🔄 Update data:', updateData);
+
+    const caseDoc = await Case.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      { new: true, runValidators: true }
+    );
+
+    if (!caseDoc) {
+      return res.status(404).json({ 
+        success: false, 
+        error: "Case not found" 
+      });
+    }
+
+    console.log('✅ Client payment updated successfully:', caseDoc._id);
+
+    res.json({ 
+      success: true, 
+      case: caseDoc,
+      message: "Client payment status updated successfully"
+    });
+
+  } catch (error) {
+    console.error('💥 Error updating client payment:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message,
+      details: 'Database update failed. Please check the data format.'
+    });
+  }
+});
+
 // Get all cases for current user (both lawyer and client)
 router.get("/my-cases", protect, async (req, res) => {
   try {

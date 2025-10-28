@@ -101,7 +101,8 @@ export default function IPCInfo() {
             </div>
             
             <div className="search-input-group">
-              <div className="input-container">
+              <div className="input-container " style={{background:"black",padding:"1px"
+              }}>
                 <div className="input-icon">🔍</div>
                 <input
                   type="text"
@@ -112,7 +113,7 @@ export default function IPCInfo() {
                   className="search-input"
                 />
                 {search && (
-                  <button className="clear-btn" onClick={clearSearch}>
+                  <button className="clear-btn" style={{padding:"10px" , background:"none"}} onClick={clearSearch}>
                     ✕
                   </button>
                 )}
@@ -162,7 +163,7 @@ export default function IPCInfo() {
                 
                 <div className="result-content">
                   <div className="info-grid">
-                    <div className="info-item">
+                    <div className="info-item full-width">
                       <div className="info-label">
                         <span className="label-icon">⚖️</span>
                         Offense
@@ -170,7 +171,7 @@ export default function IPCInfo() {
                       <div className="info-value">{result.Offense}</div>
                     </div>
                     
-                    <div className="info-item">
+                    <div className="info-item full-width">
                       <div className="info-label">
                         <span className="label-icon">⚡</span>
                         Punishment
@@ -193,9 +194,6 @@ export default function IPCInfo() {
                 <div className="result-footer">
                   <button className="action-btn primary" onClick={clearSearch}>
                     Search Another Section
-                  </button>
-                  <button className="action-btn secondary">
-                    Save to Collection
                   </button>
                 </div>
               </div>
@@ -252,33 +250,37 @@ export default function IPCInfo() {
         </section>
       )}
 
-      {/* Features Section */}
+      {/* Features Section - UPDATED STRUCTURE */}
       <section className="features-section">
         <div className="container">
           <div className="section-header">
             <h2>Why Use Our IPC Database?</h2>
-            <p>Comprehensive legal information at your fingertips</p>
           </div>
           
           <div className="features-grid">
             <div className="feature-card">
-              <div className="feature-icon">📚</div>
-              <h3>Complete Database</h3>
+              <div className="feature-top-row">
+                <div className="feature-icon">📚</div>
+                <h3>Complete Database</h3>
+              </div>
               <p>Access all IPC sections with detailed descriptions and legal interpretations</p>
             </div>
             
             <div className="feature-card">
-              <div className="feature-icon">⚡</div>
-              <h3>Instant Search</h3>
+              <div className="feature-top-row">
+                <div className="feature-icon">⚡</div>
+                <h3>Instant Search</h3>
+              </div>
               <p>Find any section instantly with our optimized search algorithm</p>
             </div>
             
             <div className="feature-card">
-              <div className="feature-icon">🔍</div>
-              <h3>Multiple Formats</h3>
+              <div className="feature-top-row">
+                <div className="feature-icon">🔍</div>
+                <h3>Multiple Formats</h3>
+              </div>
               <p>Search using simple numbers, IPC prefixes, or multiple sections</p>
             </div>
-          
           </div>
         </div>
       </section>

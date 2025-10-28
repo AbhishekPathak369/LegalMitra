@@ -82,42 +82,61 @@ const Registration = ({ setCurrentPage }) => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setMessage('');
+  e.preventDefault();
+  setMessage('');
 
-    if (!validateForm()) {
-      return;
+  if (!validateForm()) {
+    return;
+  }
+
+  setIsLoading(true);
+
+  try {
+    // SIMPLE data that matches backend
+    const registrationData = {
+      name: formData.name,
+      email: formData.email,
+      password: formData.password,
+      role: formData.role
+    };
+
+    // Add lawyer fields only if lawyer
+    if (formData.role === 'lawyer') {
+      registrationData.specialization = formData.specialization;
+      registrationData.experience = Number(formData.experience);
+      registrationData.barCouncilNumber = formData.barCouncilNumber;
+      registrationData.phone = formData.phone || '';
+      registrationData.address = formData.address || '';
     }
 
-    setIsLoading(true);
+    console.log('🚀 Sending registration data:', registrationData);
 
-    try {
-      const response = await fetch('http://localhost:5000/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
+    const response = await fetch('http://localhost:5000/api/auth/register', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(registrationData),
+    });
 
-      const data = await response.json();
+    const data = await response.json();
+    console.log('📥 Server response:', data);
 
-      if (response.ok) {
-        setMessage('Registration successful! Redirecting to login...');
-        // Redirect to login page instead of auto-login
-        setTimeout(() => {
-          setCurrentPage('login');
-        }, 2000);
-      } else {
-        setMessage(data.msg || 'Registration failed');
-      }
-    } catch (error) {
-      setMessage('Network error. Please try again.');
-      console.error('Registration error:', error);
-    } finally {
-      setIsLoading(false);
+    if (response.ok) {
+      setMessage(data.message || 'Registration successful! Redirecting to login...');
+      setTimeout(() => {
+        setCurrentPage('login');
+      }, 2000);
+    } else {
+      setMessage(data.error || data.msg || `Registration failed: ${response.status}`);
     }
-  };
+  } catch (error) {
+    console.error('Registration error:', error);
+    setMessage('Network error. Please try again.');
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const specializations = [
     'Criminal Law',

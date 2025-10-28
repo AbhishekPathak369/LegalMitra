@@ -5,6 +5,77 @@ const ExcelJS = require('exceljs');
 const Case = require("../models/Case");
 const { protect, admin } = require("../middleware/auth");
 const { sendEmail } = require("../utils/emailService");
+const auth = require("../middleware/auth"); // Add this line
+
+// =======================================================
+// USER PROFILE ROUTE - ADD THIS
+// =======================================================
+
+// Update user profile
+// Update user profile
+router.put('/user/profile', protect, async (req, res) => {
+  try {
+    const updates = req.body;
+    
+    console.log('🎯 PROFILE UPDATE CALLED - User ID:', req.user.id);
+    console.log('📤 Update data:', updates);
+    
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { $set: updates },
+      { new: true }
+    ).select('-password');
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    console.log('✅ Profile updated successfully');
+    console.log('🖼️ User profile picture after update:', user.profilePicture);
+
+    res.json({
+      success: true,
+      message: 'Profile updated successfully',
+      user
+    });
+  } catch (error) {
+    console.error('❌ Error updating profile:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
+
+router.get('/user/profile', protect, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('-password');
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      user
+    });
+  } catch (error) {
+    console.error('Error fetching profile:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
+
 
 // =======================================================
 // DASHBOARD & STATISTICS ROUTES
@@ -12,6 +83,8 @@ const { sendEmail } = require("../utils/emailService");
 
 // Get admin dashboard stats
 // Get admin dashboard stats - FIXED REVENUE CALCULATION
+
+
 // Get admin dashboard stats - FIXED REVENUE CALCULATION
 
 router.get("/stats", protect, admin, async (req, res) => {
@@ -1152,6 +1225,404 @@ router.delete("/users/:id", protect, admin, async (req, res) => {
   }
 });
 
+
+// =======================================================
+// DOCUMENT MANAGEMENT ROUTES - ADD THESE
+// =======================================================
+
+// Get user's case documents
+router.get("/users/:userId/cases/:caseId/documents", protect, admin, async (req, res) => {
+  try {
+    const { userId, caseId } = req.params;
+    
+    console.log(`📁 Fetching documents for user ${userId}, case ${caseId}`);
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: "User not found"
+      });
+    }
+
+    const caseDocuments = user.getCaseDocuments(caseId);
+    
+    console.log(`✅ Found documents for case ${caseId}:`, 
+      Object.keys(caseDocuments).reduce((acc, folder) => {
+        acc[folder] = caseDocuments[folder]?.length || 0;
+        return acc;
+      }, {})
+    );
+
+    res.json({
+      success: true,
+      documents: caseDocuments
+    });
+  } catch (error) {
+    console.error("❌ Error fetching case documents:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Add document to user's case (after Cloudinary upload)
+router.post("/users/:userId/cases/:caseId/documents", protect, admin, async (req, res) => {
+  try {
+    const { userId, caseId } = req.params;
+    const { documentData, folder, caseName } = req.body;
+    
+    console.log(`📤 Adding document to user ${userId}, case ${caseId}`, {
+      folder,
+      documentName: documentData?.name,
+      fileSize: documentData?.size
+    });
+
+    // Validate required fields
+    if (!documentData || !folder || !caseName) {
+      return res.status(400).json({
+        success: false,
+        error: "Document data, folder, and case name are required"
+      });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: "User not found"
+      });
+    }
+
+    // Check storage space
+    if (!user.hasStorageSpace(documentData.size)) {
+      return res.status(400).json({
+        success: false,
+        error: "Storage limit exceeded. Please upgrade your storage plan."
+      });
+    }
+
+    // Add document to user's case
+    await user.addCaseDocument(caseId, caseName, documentData, folder);
+    
+    console.log(`✅ Document added successfully to case ${caseId}`);
+
+    res.json({
+      success: true,
+      message: "Document added successfully",
+      storageInfo: user.getStorageInfo()
+    });
+  } catch (error) {
+    console.error("❌ Error adding document:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Delete document from user's case
+router.delete("/users/:userId/cases/:caseId/documents", protect, admin, async (req, res) => {
+  try {
+    const { userId, caseId } = req.params;
+    const { publicId, folder } = req.body;
+    
+    console.log(`🗑️ Deleting document from user ${userId}, case ${caseId}`, {
+      publicId,
+      folder
+    });
+
+    if (!publicId || !folder) {
+      return res.status(400).json({
+        success: false,
+        error: "Document publicId and folder are required"
+      });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: "User not found"
+      });
+    }
+
+    // Remove document from user's case
+    await user.removeCaseDocument(caseId, publicId, folder);
+    
+    console.log(`✅ Document deleted successfully from case ${caseId}`);
+
+    res.json({
+      success: true,
+      message: "Document deleted successfully",
+      storageInfo: user.getStorageInfo()
+    });
+  } catch (error) {
+    console.error("❌ Error deleting document:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Get user storage information
+router.get("/users/:userId/storage", protect, admin, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    console.log(`💾 Fetching storage info for user ${userId}`);
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: "User not found"
+      });
+    }
+
+    const storageInfo = user.getStorageInfo();
+    const totalDocuments = user.getTotalDocumentsCount();
+    
+    console.log(`✅ Storage info for ${user.name}:`, storageInfo);
+
+    res.json({
+      success: true,
+      storage: {
+        ...storageInfo,
+        totalDocuments,
+        role: user.role,
+        userPlan: user.role === 'lawyer' ? 'Professional' : 'Standard'
+      }
+    });
+  } catch (error) {
+    console.error("❌ Error fetching storage info:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Get all documents for a user (admin view)
+router.get("/users/:userId/documents", protect, admin, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    console.log(`📋 Fetching all documents for user ${userId}`);
+
+    const user = await User.findById(userId).select('documents name email role');
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: "User not found"
+      });
+    }
+
+    // Format documents for admin view
+    const allDocuments = {
+      cases: user.documents.cases.map(caseDoc => ({
+        caseId: caseDoc.caseId,
+        caseName: caseDoc.caseName,
+        folders: Object.keys(caseDoc.folders).reduce((acc, folder) => {
+          acc[folder] = {
+            count: caseDoc.folders[folder].length,
+            totalSize: caseDoc.folders[folder].reduce((sum, doc) => sum + (doc.size || 0), 0),
+            documents: caseDoc.folders[folder].map(doc => ({
+              id: doc.publicId,
+              name: doc.name,
+              type: doc.type,
+              size: doc.size,
+              format: doc.format,
+              uploadedAt: doc.uploadedAt,
+              url: doc.url
+            }))
+          };
+          return acc;
+        }, {})
+      })),
+      personal: {
+        count: user.documents.personal.length,
+        totalSize: user.documents.personal.reduce((sum, doc) => sum + (doc.size || 0), 0),
+        documents: user.documents.personal.map(doc => ({
+          id: doc.publicId,
+          name: doc.name,
+          type: doc.type,
+          size: doc.size,
+          format: doc.format,
+          category: doc.category,
+          uploadedAt: doc.uploadedAt,
+          url: doc.url
+        }))
+      }
+    };
+
+    console.log(`✅ Found ${user.documents.cases.length} cases with documents for ${user.name}`);
+
+    res.json({
+      success: true,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      },
+      documents: allDocuments
+    });
+  } catch (error) {
+    console.error("❌ Error fetching user documents:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Clean up user documents (admin utility)
+router.post("/users/:userId/documents/cleanup", protect, admin, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    console.log(`🧹 Cleaning up documents for user ${userId}`);
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: "User not found"
+      });
+    }
+
+    // Clean up empty case entries
+    await user.cleanupEmptyCases();
+    
+    const storageInfo = user.getStorageInfo();
+    const totalDocuments = user.getTotalDocumentsCount();
+    
+    console.log(`✅ Documents cleaned up for ${user.name}`);
+
+    res.json({
+      success: true,
+      message: "Documents cleaned up successfully",
+      storageInfo,
+      totalDocuments
+    });
+  } catch (error) {
+    console.error("❌ Error cleaning up documents:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Update user storage limit (admin only)
+router.put("/users/:userId/storage/limit", protect, admin, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { newLimit } = req.body;
+    
+    console.log(`⚙️ Updating storage limit for user ${userId} to ${newLimit} bytes`);
+
+    if (!newLimit || newLimit < 0) {
+      return res.status(400).json({
+        success: false,
+        error: "Valid storage limit is required"
+      });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: "User not found"
+      });
+    }
+
+    // Update storage limit
+    user.storageLimit = parseInt(newLimit);
+    await user.save();
+    
+    const storageInfo = user.getStorageInfo();
+    
+    console.log(`✅ Storage limit updated for ${user.name}`);
+
+    res.json({
+      success: true,
+      message: "Storage limit updated successfully",
+      storageInfo
+    });
+  } catch (error) {
+    console.error("❌ Error updating storage limit:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Get system-wide document statistics
+router.get("/analytics/documents", protect, admin, async (req, res) => {
+  try {
+    console.log("📊 Fetching system-wide document analytics...");
+
+    // Get all users with their document stats
+    const users = await User.find().select('name email role storageUsage storageLimit documents');
+    
+    const documentStats = {
+      totalUsers: users.length,
+      totalStorageUsed: users.reduce((sum, user) => sum + (user.storageUsage?.totalUsed || 0), 0),
+      totalStorageLimit: users.reduce((sum, user) => sum + (user.storageLimit || 0), 0),
+      usersWithDocuments: users.filter(user => 
+        user.documents?.cases?.length > 0 || user.documents?.personal?.length > 0
+      ).length,
+      documentBreakdown: {
+        caseDocuments: users.reduce((sum, user) => 
+          sum + (user.storageUsage?.caseDocuments || 0), 0
+        ),
+        personalDocuments: users.reduce((sum, user) => 
+          sum + (user.storageUsage?.personalDocuments || 0), 0
+        )
+      },
+      roleBreakdown: {
+        lawyers: users.filter(user => user.role === 'lawyer').length,
+        clients: users.filter(user => user.role === 'client').length,
+        students: users.filter(user => user.role === 'student').length
+      },
+      topUsersByStorage: users
+        .map(user => ({
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          storageUsed: user.storageUsage?.totalUsed || 0,
+          storageLimit: user.storageLimit || 0,
+          usagePercentage: user.storageLimit > 0 ? 
+            ((user.storageUsage?.totalUsed || 0) / user.storageLimit * 100).toFixed(1) : 0
+        }))
+        .sort((a, b) => b.storageUsed - a.storageUsed)
+        .slice(0, 10)
+    };
+
+    console.log("✅ Document analytics fetched successfully");
+
+    res.json({
+      success: true,
+      analytics: documentStats
+    });
+  } catch (error) {
+    console.error("❌ Error fetching document analytics:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+
+
+
+
 // =======================================================
 // LAWYER VERIFICATION ROUTES
 // =======================================================
@@ -1831,13 +2302,44 @@ router.post("/send-bulk-email", protect, admin, async (req, res) => {
 
 
 
-
-
 // =======================================================
 // HELPER FUNCTIONS
 // =======================================================
 
 // Helper function to format join date
+
+// Helper function to format file size for display
+function formatFileSize(bytes) {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+// Helper function to get file type icon
+function getFileTypeIcon(fileType, format) {
+  const typeMap = {
+    'image': '🖼️',
+    'pdf': '📄',
+    'document': '📝',
+    'spreadsheet': '📊',
+    'presentation': '📑',
+    'archive': '📦',
+    'text': '📋'
+  };
+
+  if (fileType === 'image') return '🖼️';
+  if (format === 'pdf') return '📄';
+  if (['doc', 'docx'].includes(format)) return '📝';
+  if (['xls', 'xlsx'].includes(format)) return '📊';
+  if (['ppt', 'pptx'].includes(format)) return '📑';
+  if (['zip', 'rar'].includes(format)) return '📦';
+  if (['txt'].includes(format)) return '📋';
+  
+  return typeMap[fileType] || '📎';
+}
+
 function formatJoinDate(date) {
   if (!date) return 'Unknown';
   

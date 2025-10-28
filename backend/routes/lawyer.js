@@ -2,6 +2,53 @@ const express = require("express");
 const router = express.Router();
 const User = require("../models/User");
 const { protect } = require("../middleware/auth");
+const Request = require('../models/Request'); // ✅ ADD THIS LINE
+
+
+// Check for new requests (for polling)
+router.get('/check-new-requests', protect, async (req, res) => { // or use protect instead of auth
+  try {
+    if (req.user.role !== 'lawyer') {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const lastCheck = req.query.lastCheck;
+    let query = { lawyerId: req.user.id, status: 'pending' };
+
+    if (lastCheck) {
+      query.createdAt = { $gt: new Date(lastCheck) };
+    }
+
+    const requests = await Request.find(query)
+      .populate('clientId', 'name email phone')
+      .sort({ createdAt: -1 });
+
+    res.json({ success: true, requests });
+  } catch (error) {
+    console.error('Error checking new requests:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Also add this to get all lawyer requests
+router.get('/requests', protect, async (req, res) => {
+  try {
+    if (req.user.role !== 'lawyer') {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const requests = await Request.find({ lawyerId: req.user.id })
+      .populate('clientId', 'name email phone')
+      .sort({ createdAt: -1 });
+
+    res.json({ success: true, requests });
+  } catch (error) {
+    console.error('Error fetching requests:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+module.exports = router;
 
 // Lawyer verification request
 router.post("/request-verification", protect, async (req, res) => {
@@ -68,7 +115,7 @@ router.get('/team-lawyers', async (req, res) => {
     
     const teamLawyers = await User.find({
       role: 'lawyer',
-      joinTeamStatus: { $in: ['paid', 'approved'] }, // CHANGED THIS LINE
+      joinTeamStatus: { $in: ['paid'] }, // CHANGED THIS LINE
       isVerified: true,
       isActive: true
     })

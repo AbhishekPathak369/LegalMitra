@@ -87,6 +87,71 @@ const Login = ({ setCurrentPage }) => {
     }
   };
 
+  // Google OAuth Login
+  const handleGoogleLogin = () => {
+    setIsLoading(true);
+    
+    // Configure your Google OAuth parameters
+    const clientId = process.env.REACT_APP_GOOGLE_CLIENT_ID || 'your-google-client-id';
+    const redirectUri = process.env.REACT_APP_GOOGLE_REDIRECT_URI || `${window.location.origin}/auth/google/callback`;
+    const scope = 'email profile';
+    
+    const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+      `client_id=${clientId}` +
+      `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+      `&response_type=code` +
+      `&scope=${encodeURIComponent(scope)}` +
+      `&access_type=offline` +
+      `&prompt=consent`;
+
+    // Redirect to Google OAuth
+    window.location.href = googleAuthUrl;
+  };
+
+  // LinkedIn OAuth Login
+  const handleLinkedInLogin = () => {
+    setIsLoading(true);
+    
+    // Configure your LinkedIn OAuth parameters
+    const clientId = process.env.REACT_APP_LINKEDIN_CLIENT_ID || 'your-linkedin-client-id';
+    const redirectUri = process.env.REACT_APP_LINKEDIN_REDIRECT_URI || `${window.location.origin}/auth/linkedin/callback`;
+    const scope = 'r_liteprofile r_emailaddress';
+    
+    const linkedInAuthUrl = `https://www.linkedin.com/oauth/v2/authorization?` +
+      `response_type=code` +
+      `&client_id=${clientId}` +
+      `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+      `&scope=${encodeURIComponent(scope)}`;
+
+    // Redirect to LinkedIn OAuth
+    window.location.href = linkedInAuthUrl;
+  };
+
+  // Alternative: Backend-initiated OAuth (Recommended)
+  const handleSocialLogin = async (provider) => {
+    setIsLoading(true);
+    
+    try {
+      // This endpoint should return the OAuth URL from your backend
+      const response = await fetch(`http://localhost:5000/api/auth/${provider}`, {
+        method: 'GET',
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.authUrl) {
+        window.location.href = data.authUrl;
+      } else {
+        setErrors({ submit: `Failed to initiate ${provider} login` });
+        setIsLoading(false);
+      }
+    } catch (error) {
+      setErrors({ submit: `Network error. Please try again.` });
+      setIsLoading(false);
+    }
+  };
+
+
   return (
     <div className="login-container">
       <div className="login-card">
@@ -177,10 +242,14 @@ const Login = ({ setCurrentPage }) => {
             </div>
 
             <div className="social-login">
-              <button className="social-btn google-btn">
+              <button className="social-btn google-btn"
+               onClick={() => handleSocialLogin('google')}
+                disabled={isLoading}>
                 <span>Google</span>
               </button>
-              <button className="social-btn linkedin-btn">
+              <button className="social-btn linkedin-btn"
+              onClick={() => handleSocialLogin('linkedin')} // Use backend approach
+                disabled={isLoading}>
                 <span>LinkedIn</span>
               </button>
             </div>

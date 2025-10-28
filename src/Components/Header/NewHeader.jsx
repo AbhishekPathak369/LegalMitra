@@ -4,9 +4,11 @@ import logoImage from '../../assets/logo.png';
 import userAvatar from '../../assets/default-avatar.png';
 
 const NewHeader = ({ setCurrentPage }) => {
-  const { user, logout } = useAuth();
+  const { user, logout, updateProfilePicture, refreshUserWithProfile } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const dropdownRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   const NAVY_BLUE = '#1b2d48'; 
   const VIBRANT_RED = 'red'; 
@@ -21,6 +23,43 @@ const NewHeader = ({ setCurrentPage }) => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  const handleImageUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      alert('Please select a valid image file (JPEG, PNG, GIF, WebP)');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Please select an image smaller than 5MB');
+      return;
+    }
+
+    try {
+      setUploading(true);
+      await updateProfilePicture(file);
+      await refreshUserWithProfile();
+      setDropdownOpen(false); // Close dropdown after upload
+    } catch (error) {
+      alert('Failed to upload image. Please try again.');
+      console.error('Upload error:', error);
+    } finally {
+      setUploading(false);
+      event.target.value = '';
+    }
+  };
+
+  const handleProfilePicClick = () => {
+    if (!uploading) {
+      fileInputRef.current?.click();
+    }
+  };
 
   const headerStyle = {
     width: '100%',
@@ -187,11 +226,25 @@ const NewHeader = ({ setCurrentPage }) => {
               onClick={() => setDropdownOpen(!dropdownOpen)}
             >
               <img 
-                src={userAvatar} 
+                src={user?.profilePicture || userAvatar} 
                 alt="Profile" 
-                style={profilePicStyle}
+                style={{
+                  ...profilePicStyle,
+                  opacity: uploading ? 0.7 : 1
+                }}
+                onError={(e) => {
+                  e.target.src = userAvatar;
+                }}
               />
               <span>{user.name}</span>
+              
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleImageUpload}
+                accept="image/*"
+                style={{ display: 'none' }}
+              />
             </button>
             
             {dropdownOpen && (
@@ -202,6 +255,14 @@ const NewHeader = ({ setCurrentPage }) => {
                 >
                   My Profile
                 </button>
+                
+                <button 
+                  style={dropdownItemStyle}
+                  onClick={handleProfilePicClick}
+                >
+                  Change Photo
+                </button>
+                
                 {user.role === 'admin' && (
                   <button 
                     style={dropdownItemStyle}
@@ -210,6 +271,7 @@ const NewHeader = ({ setCurrentPage }) => {
                     🛠️ Admin Dashboard
                   </button>
                 )}
+                
                 <button 
                   style={dropdownItemStyle}
                   onClick={handleLogout}

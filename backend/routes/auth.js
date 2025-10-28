@@ -89,8 +89,8 @@ router.post("/register", async (req, res) => {
         hasPaid: newUser.hasPaid
       },
       message: role === 'lawyer' 
-        ? "Registration successful! Your account is pending verification." 
-        : "Registration successful!"
+        ? "Registration successful! Redirecting to Login." 
+        : "Registration successful!Redirecting to Login."
     });
   } catch (err) {
     console.error("❌ Registration error:", err);
@@ -181,6 +181,123 @@ router.get("/mycollection", protect, async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+
+// === CORRECTED GOOGLE OAUTH ROUTES ===
+router.get('/google', (req, res) => {
+  try {
+    const rootUrl = 'https://accounts.google.com/o/oauth2/v2/auth';
+    const options = {
+      redirect_uri: process.env.GOOGLE_REDIRECT_URI,
+      client_id: process.env.GOOGLE_CLIENT_ID,
+      access_type: 'offline',
+      response_type: 'code',
+      prompt: 'consent',
+      scope: [
+        'https://www.googleapis.com/auth/userinfo.profile',
+        'https://www.googleapis.com/auth/userinfo.email',
+      ].join(' '),
+    };
+
+    const qs = new URLSearchParams(options);
+    const authUrl = `${rootUrl}?${qs.toString()}`;
+
+    console.log("🔗 Google OAuth URL generated");
+    
+    res.json({
+      success: true,
+      authUrl: authUrl,
+    });
+  } catch (error) {
+    console.error("❌ Google OAuth initiation error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to initiate Google login",
+    });
+  }
+});
+
+router.get('/google/callback', async (req, res) => {
+  try {
+    const { code } = req.query;
+
+    console.log("🔄 Google OAuth callback received");
+
+    if (!code) {
+      return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/login?error=no_code`);
+    }
+
+    // 1. Exchange code for tokens
+    const tokenResponse = await axios.post('https://oauth2.googleapis.com/token', {
+      client_id: process.env.GOOGLE_CLIENT_ID,
+      client_secret: process.env.GOOGLE_CLIENT_SECRET,
+      code,
+      grant_type: 'authorization_code',
+      redirect_uri: process.env.GOOGLE_REDIRECT_URI,
+    });
+
+    const { access_token } = tokenResponse.data;
+
+    // 2. Get user info from Google
+    const userResponse = await axios.get('https://www.googleapis.com/oauth2/v1/userinfo', {
+      headers: { Authorization: `Bearer ${access_token}` },
+    });
+
+    const userData = userResponse.data;
+    console.log("👤 Google user data:", userData.email);
+
+    // 3. Find or create user in database
+    let user = await User.findOne({ email: userData.email });
+    
+    if (!user) {
+      // Create new user with Google data
+      user = new User({
+        name: userData.name,
+        email: userData.email,
+        avatar: userData.picture,
+        authProvider: 'google',
+        role: 'client', // Default role for Google signups
+        isVerified: true, // Google emails are verified
+        verificationStatus: 'approved',
+        password: 'google-oauth-' + Math.random().toString(36).slice(-8) // Dummy password
+      });
+      await user.save();
+      console.log("✅ New user created via Google OAuth");
+    } else {
+      console.log("✅ Existing user found, logging in via Google OAuth");
+    }
+
+    // 4. Generate JWT token using your existing generateToken function
+    const token = generateToken(user._id);
+
+    // 5. Redirect to frontend with success
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    res.redirect(
+      `${frontendUrl}/auth-success?token=${token}&user=${encodeURIComponent(JSON.stringify({
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        hasPaid: user.hasPaid
+      }))}`
+    );
+
+  } catch (error) {
+    console.error('❌ Google OAuth error:', error.response?.data || error.message);
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    res.redirect(`${frontendUrl}/login?error=auth_failed`);
+  }
+});
+// LinkedIn OAuth endpoints (similar structure)
+router.get('/linkedin', (req, res) => {
+  // LinkedIn OAuth initiation similar to Google
+});
+
+router.get('/linkedin/callback', async (req, res) => {
+  // LinkedIn callback handling
+});
+
+module.exports = router;
 
 // Create admin user (one-time setup)
 router.post('/create-admin', async (req, res) => {

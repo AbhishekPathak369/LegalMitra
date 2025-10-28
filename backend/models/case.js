@@ -1,18 +1,6 @@
 const mongoose = require('mongoose');
 
 const CaseSchema = new mongoose.Schema({
-  // Lawyer Information (for lawyer-created cases)
-  lawyer: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  },
-  
-  // Client Information (for lawyer-created cases)
-  clientName: { type: String },
-  clientEmail: { type: String },
-  clientPhone: { type: String },
-  clientAddress: { type: String },
-  
   // Case Information
   caseName: { type: String, required: true },
   caseType: { type: String, required: true },
@@ -20,34 +8,33 @@ const CaseSchema = new mongoose.Schema({
   courtName: { type: String },
   filingDate: { type: Date },
   nextHearing: { type: Date },
-  caseValue: { type: String },
-  opponentName: { type: String },
-  opponentLawyer: { type: String },
+  caseDescription: { type: String },
   description: { type: String },
-  caseDescription: { type: String }, // For client-created cases
+  status: { 
+    type: String, 
+    enum: ['ongoing', 'solved', 'pending'], 
+    default: 'ongoing' 
+  },
+  priority: { 
+    type: String, 
+    enum: ['low', 'medium', 'high'], 
+    default: 'medium' 
+  },
   
-  // Lawyer Information (for client-created cases)
+  // Lawyer fields (for both lawyer and client created cases)
+  lawyer: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   lawyerName: { type: String },
   lawyerEmail: { type: String },
   lawyerPhone: { type: String },
   
-  // Client reference (for client-created cases)
-  client: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  },
+  // Client fields (for both lawyer and client created cases)
+  client: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  clientName: { type: String },
+  clientEmail: { type: String },
+  clientPhone: { type: String },
+  clientAddress: { type: String },
   
-  // Case Management
-  priority: { type: String, enum: ['low', 'medium', 'high'], default: 'medium' },
-  status: { type: String, enum: ['ongoing', 'solved'], default: 'ongoing' },
-  documents: [{ type: String }],
-  notes: { type: String, default: '' },
-
-  // NEW: Payment Information
-  paymentId: { 
-    type: String, 
-    default: null 
-  },
+  // Payment fields
   paymentStatus: { 
     type: String, 
     enum: ['pending', 'completed', 'failed'], 
@@ -57,10 +44,53 @@ const CaseSchema = new mongoose.Schema({
     type: Number, 
     default: 1799 
   },
+  paymentId: { 
+    type: String, 
+    default: null 
+  },
   razorpayOrderId: {
     type: String,
     default: null
-  }
+  },
+  
+  // Client Payment Tracking (for lawyers to track client payments)
+  clientPayment: {
+    status: {
+      type: String,
+      enum: ['unpaid', 'partially_paid', 'paid', 'overdue', 'refunded'],
+      default: 'unpaid'
+    },
+    agreedAmount: {
+      type: Number,
+      default: 0
+    },
+    amountPaid: {
+      type: Number,
+      default: 0
+    },
+    dueDate: {
+      type: Date
+    },
+    lastPaymentDate: {
+      type: Date
+    },
+    paymentHistory: [{
+      amount: Number,
+      date: {
+        type: Date,
+        default: Date.now
+      },
+      method: String,
+      notes: String
+    }]
+  },
+  
+  // Additional case fields
+  notes: { type: String, default: '' },
+  caseValue: { type: String },
+  opponentName: { type: String },
+  opponentLawyer: { type: String },
+  documents: [{ type: String }]
 
 }, {
   timestamps: true
@@ -70,6 +100,6 @@ const CaseSchema = new mongoose.Schema({
 CaseSchema.index({ lawyer: 1, createdAt: -1 });
 CaseSchema.index({ client: 1, createdAt: -1 });
 CaseSchema.index({ status: 1 });
-CaseSchema.index({ paymentStatus: 1 }); // NEW: Index for payment status
+CaseSchema.index({ paymentStatus: 1 });
 
 module.exports = mongoose.model('Case', CaseSchema);

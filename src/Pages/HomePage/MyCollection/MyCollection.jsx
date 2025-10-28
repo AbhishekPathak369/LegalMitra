@@ -5,6 +5,60 @@ import './MyCollection.css';
 import userAvatar from '../../../assets/default-avatar.png';
 import { PRICING } from '../../../config/pricing';
 
+
+
+
+
+
+// Enhanced Payment Badge with More Information
+const getClientPaymentBadge = (clientPayment) => {
+  if (!clientPayment) return null;
+  
+  const statusConfig = {
+    unpaid: { 
+      color: 'red', 
+      text: 'Unpaid', 
+      icon: '❌',
+      details: 'No payments received'
+    },
+    partially_paid: { 
+      color: 'orange', 
+      text: `₹${clientPayment.amountPaid || 0}/${clientPayment.agreedAmount || 0}`, 
+      icon: '⚠️',
+      details: `Partially paid (${Math.round(((clientPayment.amountPaid || 0) / (clientPayment.agreedAmount || 1)) * 100)}%)`
+    },
+    paid: { 
+      color: 'green', 
+      text: `Paid ₹${clientPayment.amountPaid || 0}`, 
+      icon: '✅',
+      details: 'Fully paid'
+    },
+    overdue: { 
+      color: 'darkred', 
+      text: 'Overdue', 
+      icon: '🚨',
+      details: 'Payment past due date'
+    },
+    refunded: { 
+      color: 'blue', 
+      text: 'Refunded', 
+      icon: '↩️',
+      details: 'Payment refunded'
+    }
+  };
+  
+  const config = statusConfig[clientPayment.status] || statusConfig.unpaid;
+  
+  return (
+    <span 
+    className={`payment-badge ${config.color}`}
+    title={config.details}
+    >
+      {config.icon} {config.text}
+    </span>
+  );
+};
+
 // Add this temporary test function to your MyCollection.jsx
 const testLawyerAPI = async () => {
   try {
@@ -27,11 +81,25 @@ const testLawyerAPI = async () => {
   }
 };
 
+// Cloudinary Configuration - Updated with your preset
+const CLOUDINARY_CONFIG = {
+  cloudName: 'dwua2kvwe', // You'll need to replace this with your actual cloud name
+  uploadPreset: 'legalmitra_documents'
+};
+
+// Document Settings
+const DOCUMENT_SETTINGS = {
+  allowedFormats: ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx', 'txt'],
+  maxFileSize: 5000000, // 5MB in bytes
+  resourceType: 'auto' // This is crucial for PDFs
+};
+
 const MyCollection = () => {
   const { user } = useAuth();
   const [showForm, setShowForm] = useState(false);
   const [expandedCase, setExpandedCase] = useState(null);
   const [caseNotes, setCaseNotes] = useState({});
+  const [requestNotifications, setRequestNotifications] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   
   // FIXED: Enhanced payment status with localStorage backup
@@ -60,6 +128,7 @@ const MyCollection = () => {
   const [callLogs, setCallLogs] = useState({});
   const [showCallModal, setShowCallModal] = useState(false);
   const [selectedCaseForCall, setSelectedCaseForCall] = useState(null);
+   const [myRequests, setMyRequests] = useState([]); // <-- ADD THIS LINE
 
   // FIXED: Enhanced team status with localStorage backup
   const [joinTeamStatus, setJoinTeamStatus] = useState(() => {
@@ -81,10 +150,35 @@ const MyCollection = () => {
     return saved ? JSON.parse(saved) : {};
   });
 
-  // Add debug logs
-  console.log('🔍 Current User:', user);
-  console.log('🔍 Join Team Status:', joinTeamStatus);
-  console.log('🔍 User Role:', user?.role);
+
+  const [selectedCaseForVault, setSelectedCaseForVault] = useState(null);
+const [showDocumentVault, setShowDocumentVault] = useState(false);
+const [documents, setDocuments] = useState(() => {
+  const saved = localStorage.getItem('caseDocuments');
+  return saved ? JSON.parse(saved) : {};
+});
+const [uploading, setUploading] = useState(false);
+const [selectedFolder, setSelectedFolder] = useState('general');
+
+// Add to your existing state
+const [incomingRequests, setIncomingRequests] = useState([]);
+const [isPolling, setIsPolling] = useState(false);
+const [lastRequestCheck, setLastRequestCheck] = useState(null);
+
+
+// Add to your existing state
+const [clientRequests, setClientRequests] = useState([]);
+const [selectedRequest, setSelectedRequest] = useState(null);
+const [showRequestDetails, setShowRequestDetails] = useState(false);
+const [requestsFilter, setRequestsFilter] = useState('all'); // 'all', 'pending', 'accepted', 'declined'
+
+
+// Add this state to your existing state variables
+const [showClientDetailsModal, setShowClientDetailsModal] = useState(false);
+const [selectedClientForDetails, setSelectedClientForDetails] = useState(null);
+
+
+  
 
   const [newClientCase, setNewClientCase] = useState({
     caseName: '',
@@ -145,26 +239,216 @@ const MyCollection = () => {
   }, []);
 
   useEffect(() => {
-    console.log('🔄 MyCollection useEffect running');
-    const initializeData = async () => {
-      if (user) {
-        console.log('🔄 Initializing data for user:', user.role);
-        
-        if (user.role === 'lawyer') {
-          await checkPaymentStatus();
-          await fetchLawyerCases();
-          await checkLawyerVerificationStatus();
-          console.log('✅ Lawyer data initialized');
-        } else if (user.role === 'client') {
-          await checkClientPaymentStatus();
-          await fetchClientCases();
-          setCheckingPayment(false);
-        }
-      }
-    };
+  let isMounted = true;
 
-    initializeData();
-  }, [user]);
+  const initializeData = async () => {
+    if (user && isMounted) {
+      console.log('🔄 Initializing data for user:', user.role);
+      
+      if (user.role === 'lawyer') {
+        await checkPaymentStatus();
+        if (isMounted) await fetchLawyerCases();
+        if (isMounted) await checkLawyerVerificationStatus();
+      } else if (user.role === 'client') {
+        await checkClientPaymentStatus();
+        if (isMounted) await fetchClientCases();
+        if (isMounted) setCheckingPayment(false);
+      }
+    }
+  };
+
+  initializeData();
+
+  // ✅ Cleanup function - prevents state updates after unmount
+  return () => {
+    isMounted = false;
+  };
+}, [user?._id]); // Keep your existing dependency
+
+// Add this function to handle viewing client details
+const viewClientDetails = (request) => {
+  setSelectedClientForDetails(request);
+  setShowClientDetailsModal(true);
+};
+
+// Add this modal component function
+const renderClientDetailsModal = () => {
+  if (!selectedClientForDetails) return null;
+
+  const client = selectedClientForDetails.clientId;
+  const request = selectedClientForDetails;
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal client-details-modal">
+        <div className="modal-header">
+          <h3>👤 Client Details</h3>
+          <button 
+            className="close-btn"
+            onClick={() => {
+              setShowClientDetailsModal(false);
+              setSelectedClientForDetails(null);
+            }}
+          >
+            ✕
+          </button>
+        </div>
+
+        <div className="modal-content">
+          {/* Client Basic Information */}
+          <div className="client-info-section">
+            <div className="client-avatar-large">
+              {client?.name?.charAt(0) || 'C'}
+            </div>
+            <div className="client-basic-info">
+              <h4>{client?.name || 'Not provided'}</h4>
+              <div className="client-contact-info">
+                <div className="contact-item">
+                  <span className="contact-icon">📧</span>
+                  <span>{client?.email || 'Not provided'}</span>
+                </div>
+                <div className="contact-item">
+                  <span className="contact-icon">📱</span>
+                  <span>{client?.phone || 'Not provided'}</span>
+                </div>
+                <div className="contact-item">
+                  <span className="contact-icon">🏠</span>
+                  <span>{client?.address || 'Not provided'}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Case Information */}
+          <div className="details-section">
+            <h5>📋 Case Information</h5>
+            <div className="details-grid">
+              <div className="detail-item">
+                <strong>Case Type:</strong>
+                <span>{request.caseType}</span>
+              </div>
+              <div className="detail-item">
+                <strong>Priority:</strong>
+                <span className={`priority-badge ${request.priority}`}>
+                  {request.priority || 'Normal'}
+                </span>
+              </div>
+              <div className="detail-item">
+                <strong>Urgency:</strong>
+                <span>{request.urgency || 'Standard'}</span>
+              </div>
+              
+              
+              <div className="detail-item">
+                <strong>Submitted:</strong>
+                <span>{new Date(request.createdAt).toLocaleString()}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Case Summary */}
+          <div className="details-section">
+            <h5>📝 Case Summary</h5>
+            <div className="case-summary-content">
+              <p>{request.caseSummary}</p>
+            </div>
+          </div>
+
+          {/* Additional Notes */}
+          {request.additionalNotes && (
+            <div className="details-section">
+              <h5>📌 Additional Notes</h5>
+              <div className="additional-notes-content">
+                <p>{request.additionalNotes}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Quick Actions */}
+          <div className="details-section">
+            <h5>⚡ Quick Actions</h5>
+            <div className="quick-actions-grid">
+              {client?.phone && (
+                <button 
+                  className="action-btn call-btn"
+                  onClick={() => {
+                    window.open(`tel:${client.phone}`, '_self');
+                    setShowClientDetailsModal(false);
+                  }}
+                >
+                  <span className="action-icon">📞</span>
+                  Call Client
+                </button>
+              )}
+              {client?.email && (
+                <button 
+                  className="action-btn email-btn"
+                  onClick={() => {
+                    window.open(`mailto:${client.email}?subject=Regarding your case: ${request.caseType}`, '_self');
+                    setShowClientDetailsModal(false);
+                  }}
+                >
+                  <span className="action-icon">📧</span>
+                  Email Client
+                </button>
+              )}
+              <button 
+                className="action-btn copy-btn"
+                onClick={() => {
+                  const clientInfo = `
+Client: ${client?.name}
+Email: ${client?.email}
+Phone: ${client?.phone}
+Address: ${client?.address}
+
+Case: ${request.caseType}
+Priority: ${request.priority}
+Budget: ${request.budgetRange}
+                  `.trim();
+                  navigator.clipboard.writeText(clientInfo);
+                  alert('Client information copied to clipboard!');
+                }}
+              >
+                <span className="action-icon">📋</span>
+                Copy Details
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="modal-footer">
+          
+          {request.status === 'pending' && (
+            <div className="footer-actions">
+              <button 
+                className="btn primary-btn accept-btn"
+                onClick={() => {
+                  handleAcceptRequest(request);
+                  setShowClientDetailsModal(false);
+                }}
+              >
+                ✅ Accept Case
+              </button>
+              <button 
+                className="btn danger-btn"
+                onClick={() => {
+                  const reason = prompt('Please provide a reason for declining:');
+                  if (reason !== null) {
+                    handleDeclineRequest(request, reason);
+                    setShowClientDetailsModal(false);
+                  }
+                }}
+              >
+                ❌ Decline
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 
   // Initialize expense data for cases
   useEffect(() => {
@@ -193,6 +477,384 @@ const MyCollection = () => {
       }
     }
   }, [clientCases, user?.role]);
+  // Add this useEffect for notification permission
+useEffect(() => {
+  // Request notification permission when component mounts
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission().then(permission => {
+      console.log('Notification permission:', permission);
+    });
+  }
+}, []);
+
+
+// Poll for request updates
+const checkRequestUpdates = async () => {
+  if (user?.role !== 'client') return;
+  
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch('http://localhost:5000/api/requests/client/updates', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      if (data.updatedRequests && data.updatedRequests.length > 0) {
+        data.updatedRequests.forEach(request => {
+          showClientNotification(request);
+        });
+      }
+    }
+  } catch (error) {
+    console.error('Error checking request updates:', error);
+  }
+};
+
+// Show notification to client
+const showClientNotification = (request) => {
+  // Create a unique key for this notification
+  const notificationKey = `notified_${request._id}_${request.status}`;
+  
+  // Check if we've already shown this notification
+  if (localStorage.getItem(notificationKey)) {
+    return; // Already shown, don't show again
+  }
+
+  if (request.status === 'accepted') {
+    alert(`🎉 Great news! ${request.lawyerId?.name} has accepted your case request!`);
+  } else if (request.status === 'declined') {
+    alert(`ℹ️ ${request.lawyerId?.name} has declined your case request.`);
+  }
+  
+  // Mark this notification as shown
+  localStorage.setItem(notificationKey, 'true');
+  
+  // Optional: Clean up old notifications after some time (e.g., 1 hour)
+  setTimeout(() => {
+    localStorage.removeItem(notificationKey);
+  }, 60 * 60 * 1000); // 1 hour
+};
+
+// Start polling for clients
+useEffect(() => {
+  if (user?.role === 'client') {
+    const interval = setInterval(checkRequestUpdates, 10000); // Check every 10 seconds
+    return () => clearInterval(interval);
+  }
+}, [user?.role]);
+
+
+// Add this function anywhere in your MyCollection component (before checkForNewRequests)
+const showRequestNotification = (request) => {
+  console.log('🔔 New request notification:', request.clientName);
+  
+  // Show browser notification
+  if ('Notification' in window && Notification.permission === 'granted') {
+    new Notification(`📨 New Case Request from ${request.clientName}`, {
+      body: `Case Type: ${request.caseType}\nSummary: ${request.caseSummary.substring(0, 100)}...`,
+      icon: '/favicon.ico'
+    });
+  }
+  
+  // Fallback: Show alert if notifications not supported
+  if (!('Notification' in window)) {
+    alert(`📨 New request from ${request.clientName}\nCase: ${request.caseType}`);
+  }
+};
+
+  // Update the checkForNewRequests function to use the correct endpoint
+const checkForNewRequests = async () => {
+  if (user?.role !== 'lawyer' || !hasPaid) return;
+  
+  try {
+    const token = localStorage.getItem('token');
+    const params = new URLSearchParams();
+    
+    if (lastRequestCheck) {
+      params.append('lastCheck', lastRequestCheck.toISOString());
+    }
+
+    console.log('🔄 Checking for new requests...');
+    
+    const response = await fetch(`http://localhost:5000/api/lawyer/check-new-requests?${params}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    console.log('📡 Polling response status:', response.status);
+
+    if (response.ok) {
+      const data = await response.json();
+      console.log('📨 Polling found requests:', data.requests?.length || 0);
+      
+      if (data.requests && data.requests.length > 0) {
+        // Enhanced duplicate filtering - check both ID and notification status
+        const newRequests = data.requests.filter(newReq => {
+          const isDuplicate = incomingRequests.some(existingReq => existingReq._id === newReq._id);
+          const alreadyNotified = localStorage.getItem(`lawyer_notified_${newReq._id}`);
+          
+          return !isDuplicate && !alreadyNotified;
+        });
+        
+        if (newRequests.length > 0) {
+          console.log('🎯 Adding new requests:', newRequests.length);
+          // Add new requests to state
+          setIncomingRequests(prev => [...newRequests, ...prev]);
+          
+          // Show notifications for new requests and mark as notified
+          newRequests.forEach(request => {
+            showRequestNotification(request);
+            // Mark this request as notified to prevent duplicates
+            localStorage.setItem(`lawyer_notified_${request._id}`, 'true');
+          });
+        }
+      }
+      
+      setLastRequestCheck(new Date());
+    } else {
+      console.error('❌ Polling failed with status:', response.status);
+    }
+  } catch (error) {
+    console.error('💥 Error checking requests:', error);
+  }
+};
+// Add this useEffect for polling
+useEffect(() => {
+  if (user?.role === 'lawyer' && hasPaid) {
+    setIsPolling(true);
+    
+    // Start polling immediately
+    checkForNewRequests();
+    
+    // Then poll every 10 seconds
+    const pollInterval = setInterval(checkForNewRequests, 10000);
+    
+    return () => {
+      clearInterval(pollInterval);
+      setIsPolling(false);
+    };
+  }
+}, [user?.role, hasPaid]);
+
+
+// Update handleAcceptRequest for dynamic status change
+const handleAcceptRequest = async (request) => {
+  try {
+    console.log('✅ Accepting request:', request._id);
+    
+    const token = localStorage.getItem('token');
+    const response = await fetch(`http://localhost:5000/api/requests/${request._id}/respond`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        status: 'accepted',
+        response: `I accept your case request. I will contact you at ${request.contactInfo?.email || request.clientId?.email}`
+      })
+    });
+
+    if (response.ok) {
+      // Remove from incoming requests immediately
+      setIncomingRequests(prev => prev.filter(req => req._id !== request._id));
+      
+      // Update clientRequests to show the accepted status
+      setClientRequests(prev => prev.map(req => 
+        req._id === request._id 
+          ? { ...req, status: 'accepted' }
+          : req
+      ));
+      
+      console.log('✅ Request accepted successfully');
+      alert(`✅ Accepted request from ${request.clientName}. They have been notified.`);
+    } else {
+      throw new Error('Failed to accept request');
+    }
+  } catch (error) {
+    console.error('Error accepting request:', error);
+    alert('❌ Failed to accept request. Please try again.');
+  }
+};
+
+// Update handleDeclineRequest for dynamic status change
+const handleDeclineRequest = async (request, reason = '') => {
+  try {
+    console.log('❌ Declining request:', request._id);
+    
+    const token = localStorage.getItem('token');
+    const response = await fetch(`http://localhost:5000/api/requests/${request._id}/respond`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        status: 'declined',
+        response: reason || 'Unfortunately, I cannot take this case at the moment due to workload/specialization constraints.'
+      })
+    });
+
+    if (response.ok) {
+      // Remove from incoming requests immediately
+      setIncomingRequests(prev => prev.filter(req => req._id !== request._id));
+      
+      // Update clientRequests to show the declined status
+      setClientRequests(prev => prev.map(req => 
+        req._id === request._id 
+          ? { ...req, status: 'declined' }
+          : req
+      ));
+      
+      console.log('❌ Request declined successfully');
+      alert(`❌ Declined request from ${request.clientName}. They have been notified.`);
+    } else {
+      throw new Error('Failed to decline request');
+    }
+  } catch (error) {
+    console.error('Error declining request:', error);
+    alert('❌ Failed to decline request. Please try again.');
+  }
+};
+// Update the renderRequestNotifications function to include close buttons
+const renderRequestNotifications = () => {
+  if (incomingRequests.length === 0) return null;
+
+  return (
+    <div className="request-notifications">
+      <div className="notifications-header">
+        <h3>📨 New Client Requests</h3>
+        <button 
+          className="close-all-btn"
+          onClick={() => setIncomingRequests([])}
+        >
+          Close All
+        </button>
+      </div>
+      <div className="requests-list">
+        {incomingRequests.map((request, index) => (
+          <div key={request.id || index} className="request-notification">
+            <div className="notification-header">
+              <div className="request-header">
+                <strong>{request.clientName}</strong>
+                <span className="request-time">
+                  {new Date(request.timestamp).toLocaleTimeString()}
+                </span>
+              </div>
+              <button 
+                className="close-notification-btn"
+                onClick={() => {
+                  // Remove this specific notification
+                  setIncomingRequests(prev => 
+                    prev.filter(req => req._id !== request._id)
+                  );
+                }}
+              >
+                ✕
+              </button>
+            </div>
+            <div className="request-summary">
+              {request.caseSummary}
+            </div>
+            <div className="request-actions">
+              <button 
+                className="accept-btn"
+                onClick={() => handleAcceptRequest(request)}
+              >
+                ✅ Accept
+              </button>
+              <button 
+                className="decline-btn"
+                onClick={() => handleDeclineRequest(request)}
+              >
+                ❌ Decline
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+// Update your existing fetchMyRequests function
+const fetchMyRequests = async () => {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch('http://localhost:5000/api/requests/my-requests', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      setMyRequests(data.requests || []);
+      
+      // Check for new responses
+      const newResponses = data.requests.filter(req => 
+        (req.status === 'accepted' || req.status === 'declined') && 
+        !req.notificationShown
+      );
+      
+      newResponses.forEach(request => {
+        showClientNotification(request);
+      });
+    }
+  } catch (error) {
+    console.error('Error fetching my requests:', error);
+  }
+};
+
+  // CLIENT PAYMENT FUNCTIONS - Add to your MyCollection.jsx
+
+// Update client payment status
+// FIXED: Update client payment status function
+// FIXED: Update client payment status function
+const updateClientPaymentStatus = async (caseId, paymentData) => {
+  try {
+    const token = localStorage.getItem('token');
+    console.log('💰 Updating client payment:', { caseId, paymentData });
+    
+    const response = await fetch(`http://localhost:5000/api/cases/${caseId}/client-payment`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(paymentData)
+    });
+
+    console.log('📡 Client payment update response status:', response.status);
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to update payment status');
+    }
+
+    const data = await response.json();
+    console.log('✅ Client payment update successful:', data);
+    
+    // Update local state - FIXED: Use the correct state setter
+    if (user?.role === 'lawyer') {
+      setLawyerCases(prev => prev.map(caseItem => 
+        caseItem._id === caseId ? { ...caseItem, clientPayment: data.case.clientPayment } : caseItem
+      ));
+    }
+    
+    // alert('✅ Client payment status updated!');
+    return data;
+  } catch (error) {
+    console.error('❌ Error updating client payment:', error);
+    alert(`❌ Failed to update payment status: ${error.message}`);
+    throw error;
+  }
+};
 
   // Calculate total expenses for a case
   const calculateTotalExpenses = (caseId) => {
@@ -302,6 +964,8 @@ const MyCollection = () => {
     }
   }
 };
+
+
   // Request verification
   // FIXED: Enhanced verification request with proper error handling
 const requestVerification = async () => {
@@ -357,6 +1021,34 @@ const requestVerification = async () => {
     setIsLoading(false);
   }
 };
+
+
+// Open document vault for a case
+const openDocumentVault = (caseItem) => {
+  console.log('📁 Opening document vault for case:', caseItem.caseName);
+  setSelectedCaseForVault(caseItem);
+  setShowDocumentVault(true);
+  
+  // Initialize documents structure if it doesn't exist
+  const updatedDocuments = { ...documents };
+  if (!updatedDocuments[caseItem._id]) {
+    updatedDocuments[caseItem._id] = {
+      general: [],
+      court_documents: [],
+      evidence: [],
+      contracts: []
+    };
+    setDocuments(updatedDocuments);
+    localStorage.setItem('caseDocuments', JSON.stringify(updatedDocuments));
+  }
+};
+
+
+
+
+
+
+
   // FIXED: Enhanced team payment verification
   const verifyTeamPayment = async (paymentData) => {
   try {
@@ -767,25 +1459,46 @@ const requestVerification = async () => {
     );
   };
 
-  // Check payment status for lawyers - FIXED VERSION
-  useEffect(() => {
-    const initializeData = async () => {
-      if (user) {
-        console.log('🔄 Initializing data for user:', user.role);
-        
-        if (user.role === 'lawyer') {
-          await checkPaymentStatus();
-          await fetchLawyerCases();
-        } else if (user.role === 'client') {
-          await checkClientPaymentStatus();
-          await fetchClientCases();
-          setCheckingPayment(false);
-        }
-      }
-    };
 
-    initializeData();
-  }, [user]);
+
+  const openDocumentVaultForLawyer = (caseItem) => {
+  setSelectedCaseForVault(caseItem);
+  setShowDocumentVault(true);
+  
+  // Initialize with lawyer-specific folders
+  const updatedDocuments = { ...documents };
+  if (!updatedDocuments[caseItem._id]) {
+    updatedDocuments[caseItem._id] = {
+      general: [],
+      court_documents: [],
+      evidence: [],
+      contracts: []
+        
+    };
+    setDocuments(updatedDocuments);
+    localStorage.setItem('caseDocuments', JSON.stringify(updatedDocuments));
+  }
+};
+
+  // Check payment status for lawyers - FIXED VERSION
+  // useEffect(() => {
+  //   const initializeData = async () => {
+  //     if (user) {
+  //       console.log('🔄 Initializing data for user:', user.role);
+        
+  //       if (user.role === 'lawyer') {
+  //         await checkPaymentStatus();
+  //         await fetchLawyerCases();
+  //       } else if (user.role === 'client') {
+  //         await checkClientPaymentStatus();
+  //         await fetchClientCases();
+  //         setCheckingPayment(false);
+  //       }
+  //     }
+  //   };
+
+  //   initializeData();
+  // }, [user]);
 
   // Add this useEffect after your existing useEffects
   useEffect(() => {
@@ -820,42 +1533,218 @@ const requestVerification = async () => {
   }, [user, hasPaid, hasPaidClient, checkingPayment]);
 
   const checkClientPaymentStatus = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        console.error('❌ No token found');
-        return;
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.error('❌ No token found');
+      return;
+    }
+
+    console.log('🔍 Checking client payment status from server...');
+    const response = await fetch('http://localhost:5000/api/payment/client-payment-status', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
       }
+    });
 
-      console.log('🔍 Checking client payment status from server...');
-      const response = await fetch('http://localhost:5000/api/payment/client-payment-status', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      console.log('📡 Client payment status response status:', response.status);
-      
-      const data = await response.json();
-      console.log('💰 Client payment status data:', data);
-      
-      if (response.ok) {
+    console.log('📡 Client payment status response status:', response.status);
+    
+    const data = await response.json();
+    console.log('💰 Client payment status data:', data);
+    
+    if (response.ok) {
+      // ✅ FIX: Only update if value actually changed
+      if (data.hasPaid !== hasPaidClient) {
         setHasPaidClient(data.hasPaid);
         localStorage.setItem('userHasPaidClient', data.hasPaid.toString());
-        console.log('✅ Client payment status updated to:', data.hasPaid);
-      } else {
-        console.error('❌ Failed to check client payment status:', data.error);
-        setHasPaidClient(false);
-        localStorage.setItem('userHasPaidClient', 'false');
       }
-    } catch (error) {
-      console.error('💥 Error checking client payment status:', error);
-      setHasPaidClient(false);
-      localStorage.setItem('userHasPaidClient', 'false');
+      console.log('✅ Client payment status updated to:', data.hasPaid);
+    } else {
+      console.error('❌ Failed to check client payment status:', data.error);
+      // Don't set false on error to avoid conflicts
     }
-  };
+  } catch (error) {
+    console.error('💥 Error checking client payment status:', error);
+    // Don't automatically set to false on error
+  }
+};
+
+
+// Fetch client requests for lawyers - UPDATED with proper data mapping
+// Update fetchClientRequests to get requests with all statuses
+const fetchClientRequests = async () => {
+  try {
+    if (user?.role !== 'lawyer' || joinTeamStatus !== 'paid') return;
+    
+    const token = localStorage.getItem('token');
+    console.log('🔍 Fetching all client requests for lawyer...');
+    
+    const response = await fetch('http://localhost:5000/api/requests/lawyer-requests', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    console.log('📡 Client requests response status:', response.status);
+    
+    if (response.ok) {
+      const data = await response.json();
+      console.log('📨 All client requests data:', data);
+      
+      // Transform the data to include all statuses
+      const transformedRequests = data.requests.map(request => ({
+        _id: request._id,
+        clientId: {
+          _id: request.clientId?._id,
+          name: request.clientId?.name || 'Unknown Client',
+          email: request.clientId?.email || 'No email',
+          phone: request.clientId?.phone || 'Not provided',
+          address: request.clientId?.address || 'Not provided'
+        },
+        lawyerId: {
+          _id: request.lawyerId?._id,
+          name: request.lawyerId?.name || 'Unknown Lawyer',
+          email: request.lawyerId?.email,
+          specialization: request.lawyerId?.specialization
+        },
+        caseType: request.caseType || 'General Case',
+        caseSummary: request.caseSummary || request.description || 'No summary provided',
+        status: request.status || 'pending',
+        priority: request.priority || 'medium',
+        urgency: request.urgency || 'standard',
+        budgetRange: request.budgetRange,
+        preferredLanguage: request.preferredLanguage,
+        caseComplexity: request.caseComplexity,
+        additionalNotes: request.additionalNotes,
+        contactInfo: {
+          phone: request.clientId?.phone || request.contactPhone,
+          email: request.clientId?.email
+        },
+        documents: request.documents || [],
+        createdAt: request.createdAt,
+        updatedAt: request.updatedAt,
+        lawyerResponse: request.lawyerResponse,
+        responseDate: request.responseDate
+      }));
+      
+      console.log('🔄 Transformed all requests:', transformedRequests);
+      setClientRequests(transformedRequests);
+    } else {
+      console.error('❌ Failed to fetch client requests');
+      const errorData = await response.json();
+      console.error('Error details:', errorData);
+    }
+  } catch (error) {
+    console.error('💥 Error fetching client requests:', error);
+  }
+};
+
+// Accept a client request - UPDATED with proper API call
+const acceptClientRequest = async (requestId) => {
+  try {
+    const token = localStorage.getItem('token');
+    console.log('✅ Accepting request:', requestId);
+    
+    const response = await fetch(`http://localhost:5000/api/requests/${requestId}/respond`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        status: 'accepted',
+        lawyerResponse: `I accept your case request. I will contact you shortly to discuss the details.`
+      })
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      console.log('✅ Request accepted successfully:', data);
+      
+      // Update local state
+      setClientRequests(prev => prev.map(req => 
+        req._id === requestId ? { ...req, status: 'accepted', lawyerResponse: data.request.lawyerResponse } : req
+      ));
+      setShowRequestDetails(false);
+      
+      alert('✅ Request accepted successfully! The client has been notified.');
+      
+      // Refresh requests
+      await fetchClientRequests();
+    } else {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to accept request');
+    }
+  } catch (error) {
+    console.error('Error accepting request:', error);
+    alert(`❌ Failed to accept request: ${error.message}`);
+  }
+};
+
+// Decline a client request - UPDATED with proper API call
+const declineClientRequest = async (requestId, reason = '') => {
+  try {
+    const token = localStorage.getItem('token');
+    console.log('❌ Declining request:', requestId);
+    
+    const response = await fetch(`http://localhost:5000/api/requests/${requestId}/respond`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        status: 'declined',
+        lawyerResponse: reason || 'Unfortunately, I cannot take this case at the moment due to workload constraints.'
+      })
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      console.log('❌ Request declined successfully:', data);
+      
+      // Update local state
+      setClientRequests(prev => prev.map(req => 
+        req._id === requestId ? { ...req, status: 'declined', lawyerResponse: data.request.lawyerResponse } : req
+      ));
+      setShowRequestDetails(false);
+      
+      alert('✅ Request declined successfully. The client has been notified.');
+      
+      // Refresh requests
+      await fetchClientRequests();
+    } else {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to decline request');
+    }
+  } catch (error) {
+    console.error('Error declining request:', error);
+    alert(`❌ Failed to decline request: ${error.message}`);
+  }
+};
+
+// View request details
+const viewRequestDetails = (request) => {
+  setSelectedRequest(request);
+  setShowRequestDetails(true);
+};
+
+// Add to your existing useEffects
+// Update your useEffect for client requests
+useEffect(() => {
+  if (user?.role === 'lawyer' && joinTeamStatus === 'paid') {
+    console.log('🔄 Fetching client requests for team member lawyer...');
+    fetchClientRequests();
+    
+    // Poll for new requests every 30 seconds
+    const interval = setInterval(fetchClientRequests, 30000);
+    return () => clearInterval(interval);
+  }
+}, [user?.role, joinTeamStatus]);
 
   const checkPaymentStatus = async () => {
     try {
@@ -1077,6 +1966,203 @@ const requestVerification = async () => {
     }
   };
 
+
+ const renderClientRequestsSection = () => {
+  if (user?.role !== 'lawyer' || joinTeamStatus !== 'paid') return null;
+
+  const filteredRequests = clientRequests.filter(request => {
+    if (requestsFilter === 'all') return true;
+    return request.status === requestsFilter;
+  });
+
+  const stats = {
+    total: clientRequests.length,
+    pending: clientRequests.filter(req => req.status === 'pending').length,
+    accepted: clientRequests.filter(req => req.status === 'accepted').length,
+    declined: clientRequests.filter(req => req.status === 'declined').length
+  };
+
+  return (
+    <div className="requests-section enhanced-requests">
+      <div className="section-header">
+        <h2>📨 Client Case Requests</h2>
+        <div className="requests-stats">
+          <span className="stat total">
+            Total: {stats.total}
+          </span>
+          <span className="stat pending">
+            Pending: {stats.pending}
+          </span>
+          <span className="stat accepted">
+            Accepted: {stats.accepted}
+          </span>
+          <span className="stat declined">
+            Declined: {stats.declined}
+          </span>
+        </div>
+      </div>
+
+      {/* Requests List */}
+      <div className="requests-container">
+        {filteredRequests.length > 0 ? (
+          <div className="requests-grid">
+            {filteredRequests.map(request => (
+              <div key={request._id} className={`request-card enhanced ${request.status}`}>
+                <div className="request-header">
+                  <div className="client-info">
+                    <div className="client-avatar">
+                      {request.clientId?.name?.charAt(0) || 'C'}
+                    </div>
+                    <div className="client-details">
+                      <h4>From: {request.clientId?.name || 'Client'}</h4>
+                      <p className="client-contact">
+                        📧 {request.clientId?.email || 'No email'} • 
+                        📱 {request.clientId?.phone || 'Not provided'}
+                      </p>
+                    </div>
+                  </div>
+                  {/* FIXED: Status badge in same row */}
+                  <div className="status-badge-container">
+                    <span className={`status-badge enhanced ${request.status}`}>
+                      {request.status === 'pending' && '⏳ Pending'}
+                      {request.status === 'accepted' && '✅ Accepted'}
+                      {request.status === 'declined' && '❌ Declined'}
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="request-body">
+                  <div className="case-info">
+                    <div className="info-item">
+                      <span className="info-label">Case Type:</span>
+                      <span className="info-value">{request.caseType}</span>
+                    </div>
+                    <div className="info-item">
+                      <span className="info-label">Priority:</span>
+                      <span className="info-value priority">{request.priority || 'Normal'}</span>
+                    </div>
+                    <div className="info-item">
+                      <span className="info-label">Submitted:</span>
+                      <span className="info-value">
+                        {new Date(request.createdAt).toLocaleDateString()} at {new Date(request.createdAt).toLocaleTimeString()}
+                      </span>
+                    </div>
+                    <div className="info-item">
+                      <span className="info-label">Budget Range:</span>
+                      <span className="info-value">{request.budgetRange || 'Not specified'}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="case-summary">
+                    <strong>Case Summary:</strong>
+                    <p>{request.caseSummary}</p>
+                  </div>
+                  
+                  {request.additionalNotes && (
+                    <div className="additional-notes">
+                      <strong>Additional Notes:</strong>
+                      <p>{request.additionalNotes}</p>
+                    </div>
+                  )}
+                  
+                  {request.lawyerResponse && (
+                    <div className={`lawyer-response ${request.status}`}>
+                      <strong>Your Response:</strong>
+                      <p>{request.lawyerResponse}</p>
+                      {request.responseDate && (
+                        <small>Responded on: {new Date(request.responseDate).toLocaleString()}</small>
+                      )}
+                    </div>
+                  )}
+                </div>
+                
+                <div className="request-actions">
+                  {/* View Client Details Button - Always visible */}
+                  <button 
+                    className="action-btn view-client-btn"
+                    onClick={() => viewClientDetails(request)}
+                    title="View complete client information"
+                  >
+                    👤 View Client Details
+                  </button>
+
+                  {/* Decision Buttons for Pending Requests */}
+                  {request.status === 'pending' && (
+                    <div className="decision-buttons">
+                      <button 
+                        className="action-btn accept-btn"
+                        onClick={() => handleAcceptRequest(request)}
+                      >
+                        ✅ Accept Case
+                      </button>
+                      <button 
+                        className="action-btn decline-btn"
+                        onClick={() => {
+                          const reason = prompt('Please provide a reason for declining:');
+                          if (reason !== null) {
+                            handleDeclineRequest(request, reason);
+                          }
+                        }}
+                      >
+                        ❌ Decline
+                      </button>
+                    </div>
+                  )}
+                  
+                  {/* Contact Button for Accepted Requests */}
+                  {request.status === 'accepted' && (
+                    <button 
+                      className="action-btn contact-btn"
+                      onClick={() => {
+                        if (request.clientId?.phone) {
+                          window.open(`tel:${request.clientId.phone}`, '_self');
+                        } else if (request.clientId?.email) {
+                          window.open(`mailto:${request.clientId.email}`, '_self');
+                        } else {
+                          alert('No contact information available for this client.');
+                        }
+                      }}
+                    >
+                      📞 Contact Client
+                    </button>
+                  )}
+
+                  {/* Status Message for Declined Requests */}
+                  {request.status === 'declined' && (
+                    <button className="action-btn declined" disabled>
+                      ❌ Request Declined
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="empty-requests-state">
+            <div className="empty-icon">📨</div>
+            <h3>
+              {requestsFilter === 'all' 
+                ? "No Client Requests"
+                : `No ${requestsFilter} requests`
+              }
+            </h3>
+            <p>
+              {requestsFilter === 'all' 
+                ? "You haven't received any case requests from clients yet."
+                : `No ${requestsFilter} requests found.`
+              }
+            </p>
+            <div className="empty-actions">
+              <button className="secondary-btn" onClick={fetchClientRequests}>
+                🔄 Refresh Requests
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
   const submitClientCaseAfterPayment = async (caseData, paymentId, razorpayOrderId) => {
     try {
       setIsLoading(true);
@@ -1213,6 +2299,143 @@ const requestVerification = async () => {
     }
   };
 
+// Delete document from Cloudinary and local state
+const deleteDocument = async (caseId, folder, documentIndex) => {
+  if (!window.confirm('Are you sure you want to delete this document?')) {
+    return;
+  }
+
+  try {
+    const documentToDelete = documents[caseId][folder][documentIndex];
+    
+    // For now, just remove from local state since we don't have backend deletion
+    // In production, you'd call your backend to delete from Cloudinary
+    const updatedDocuments = { ...documents };
+    updatedDocuments[caseId][folder].splice(documentIndex, 1);
+    setDocuments(updatedDocuments);
+    localStorage.setItem('caseDocuments', JSON.stringify(updatedDocuments));
+    
+    alert('✅ Document deleted successfully!');
+    
+    // Optional: Backend deletion would go here
+    /*
+    const response = await fetch(`http://localhost:5000/api/documents/delete`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        publicId: documentToDelete.publicId
+      })
+    });
+    */
+  } catch (error) {
+    console.error('Error deleting document:', error);
+    alert('❌ Failed to delete document. Please try again.');
+  }
+};
+
+// Download document
+// Actual download function - FIXED
+const downloadDocument = async (doc) => {
+  if (!doc || !doc.url) {
+    console.error('❌ Invalid document or URL:', doc);
+    alert('❌ Cannot download document: Invalid file');
+    return;
+  }
+
+  try {
+    // Show loading state
+    const downloadBtn = event.target.closest('.download-btn');
+    if (downloadBtn) {
+      downloadBtn.disabled = true;
+      downloadBtn.innerHTML = '⏳';
+    }
+
+    console.log('📥 Starting download for:', doc.name);
+    
+    // Fetch the file
+    const response = await fetch(doc.url);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const blob = await response.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    
+    // Create download link
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = doc.name || `document_${Date.now()}`;
+    link.style.display = 'none';
+    
+    // Trigger download
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // Clean up
+    URL.revokeObjectURL(blobUrl);
+    
+    console.log('✅ Download completed:', doc.name);
+    
+    // Show success message
+    alert(`✅ "${doc.name}" downloaded successfully!`);
+    
+  } catch (error) {
+    console.error('❌ Download failed:', error);
+    
+    // Fallback: Force download with a different approach
+    try {
+      const link = document.createElement('a');
+      link.href = doc.url;
+      link.download = doc.name;
+      link.target = '_blank';
+      
+      // Add download attribute to force download
+      link.setAttribute('download', doc.name);
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      alert('📥 Download started! Check your downloads folder.');
+    } catch (fallbackError) {
+      console.error('❌ Fallback download failed:', fallbackError);
+      alert('❌ Download failed. Please right-click and "Save as" instead.');
+    }
+  } finally {
+    // Reset button state
+    const downloadBtn = document.querySelector('.download-btn[disabled]');
+    if (downloadBtn) {
+      downloadBtn.disabled = false;
+      downloadBtn.innerHTML = '⬇️';
+    }
+  }
+};
+
+// // Get file icon based on file type
+// const getFileIcon = (fileType, format) => {
+//   if (fileType === 'image') return '🖼️';
+//   if (format === 'pdf') return '📄';
+//   if (['doc', 'docx'].includes(format)) return '📝';
+//   if (['txt'].includes(format)) return '📋';
+//   return '📎';
+// };
+
+// Format file size
+const formatFileSize = (bytes) => {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+};
+
+
+
+
   // Payment Functions - UPDATED with better status handling
   const loadRazorpayScript = () => {
     return new Promise((resolve) => {
@@ -1291,6 +2514,152 @@ const requestVerification = async () => {
       alert('❌ Failed to download PDF. Please try again.');
     }
   };
+// Document Vault Modal
+const renderDocumentVault = () => {
+  if (!selectedCaseForVault) return null;
+
+  const caseDocuments = documents[selectedCaseForVault._id] || {};
+  const folderNames = {
+    general: 'General Documents',
+    court_documents: 'Court Documents',
+    evidence: 'Evidence',
+    
+    contracts: 'Contracts',
+                // For lawyers
+  
+  };
+
+  return (
+    <div className="document-vault-overlay">
+      <div className="document-vault-modal">
+        <div className="vault-header">
+          <h3>📁 Document Vault - {selectedCaseForVault.caseName}</h3>
+          <button 
+            className="close-btn"
+            onClick={() => setShowDocumentVault(false)}
+          >
+            ✕
+          </button>
+        </div>
+
+        <div className="vault-content">
+          {/* Folder Selection */}
+          <div className="folder-selection">
+            <h4>Select Folder:</h4>
+            <div className="folder-buttons">
+              {Object.entries(folderNames).map(([folderKey, folderName]) => (
+                <button
+                  key={folderKey}
+                  className={`folder-btn ${selectedFolder === folderKey ? 'active' : ''}`}
+                  onClick={() => setSelectedFolder(folderKey)}
+                >
+                  <span className="folder-icon">📂</span>
+                  {folderName}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Upload Section */}
+          <div className="upload-section">
+            <button
+              className="upload-btn"
+              onClick={() => handleFileUpload(selectedFolder)}
+              disabled={uploading}
+            >
+              {uploading ? (
+                <>
+                  <div className="loading-spinner-small"></div>
+                  Uploading...
+                </>
+              ) : (
+                <>
+                  <span className="upload-icon"></span>
+                  Upload to {folderNames[selectedFolder]}
+                </>
+              )}
+            </button>
+            <p className="upload-note">
+              Supported formats: PDF, Images, Word documents, Text files (Max 5MB)
+            </p>
+          </div>
+
+          {/* Documents List */}
+          <div className="documents-section">
+            <h4>Documents in {folderNames[selectedFolder]}</h4>
+            <div className="documents-list">
+              {caseDocuments[selectedFolder] && caseDocuments[selectedFolder].length > 0 ? (
+                caseDocuments[selectedFolder].map((doc, index) => (
+                  <div key={doc.id || index} className="document-item">
+                    <div className="document-info">
+                      
+                      <div className="document-details">
+                        <span className="document-name">{doc.name}</span>
+                        <span className="document-meta">
+                          {formatFileSize(doc.size)} • {new Date(doc.uploadDate).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="document-actions">
+                      <button
+                        className="action-btn view-btn"
+                        onClick={() => window.open(doc.url, '_blank')}
+                        title="View Document"
+                      >
+                        View
+                      </button>
+                        <button
+                          className="action-btn download-btn"
+                          onClick={() => downloadDocument(doc)}
+                          title="Download"
+                        >
+                          Download
+                        </button>
+                        
+                      <button
+                        className="action-btn delete-btn"
+                        onClick={() => deleteDocument(selectedCaseForVault._id, selectedFolder, index)}
+                        title="Delete"
+                      >
+                      Delete
+                      </button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="no-documents">
+                  <p>No documents in this folder yet.</p>
+                  <p>Click "Upload" to add documents to {folderNames[selectedFolder]}.</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Storage Summary */}
+          <div className="storage-summary">
+            <h4>Storage Information</h4>
+            <div className="storage-stats">
+              <div className="storage-stat">
+                <span>Total Documents:</span>
+                <span>
+                  {Object.values(caseDocuments).reduce((total, folder) => total + (folder ? folder.length : 0), 0)}
+                </span>
+              </div>
+              <div className="storage-stat">
+                <span>Current Folder:</span>
+                <span>
+                  {caseDocuments[selectedFolder] ? caseDocuments[selectedFolder].length : 0} documents
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
 
   const renderCallModal = () => {
     if (!selectedCaseForCall) return null;
@@ -1401,7 +2770,21 @@ Generated via LegalMitra Case Management System
     }
   };
 
-  const renderProfileCardModal = () => (
+  const renderProfileCardModal = () => {
+  // Calculate real statistics from lawyer cases
+  const totalCases = lawyerCases.length;
+  const solvedCases = lawyerCases.filter(caseItem => caseItem.status === 'solved').length;
+  const ongoingCases = lawyerCases.filter(caseItem => caseItem.status === 'ongoing').length;
+  const successRate = totalCases > 0 ? Math.round((solvedCases / totalCases) * 100) : 0;
+
+  // Get lawyer-specific data from user schema
+  const specialization = user?.specialization || 'General Practice';
+  const experience = user?.experience || 0;
+  const barCouncilNumber = user?.barCouncilNumber || 'Not provided';
+  const phone = user?.phone || 'Not provided';
+  const address = user?.address || 'Not provided';
+
+  return (
     <div className="profile-card-overlay">
       <div className="profile-card-modal">
         <div className="profile-card-header">
@@ -1418,15 +2801,28 @@ Generated via LegalMitra Case Management System
           {/* Profile Card Preview */}
           <div className="lawyer-profile-card" id="lawyerProfileCard">
             <div className="profile-header">
-              <div className="profile-avatar">
-                {user?.name?.charAt(0) || 'L'}
+              <div className="profile-avatars">
+                <img 
+                  src={user?.profilePicture || defaultAvatar} 
+                  alt="Profile" 
+                  className="profile-avatar-img"
+                  onError={(e) => {
+                    console.log('❌ Image failed to load, using default avatar');
+                    e.target.src = defaultAvatar;
+                  }}
+                />
               </div>
               <div className="profile-info">
                 <h2>{user?.name || 'Lawyer Name'}</h2>
-                <p className="profile-title">Senior Legal Counsel</p>
+                <p className="profile-title">
+                  {specialization} • {experience}+ years experience
+                </p>
                 <div className="rating">
                   <span className="stars">⭐⭐⭐⭐⭐</span>
                   <span className="rating-text">4.8 (120 reviews)</span>
+                </div>
+                <div className="bar-council">
+                  <span className="badge">Bar Council: {barCouncilNumber}</span>
                 </div>
               </div>
             </div>
@@ -1435,23 +2831,19 @@ Generated via LegalMitra Case Management System
               <h4>📊 Case Statistics</h4>
               <div className="stats-grid">
                 <div className="stat-item">
-                  <span className="stat-number">{roleData.stats.total}</span>
+                  <span className="stat-number">{totalCases}</span>
                   <span className="stat-label">Total Cases</span>
                 </div>
                 <div className="stat-item">
-                  <span className="stat-number">{roleData.stats.solved}</span>
+                  <span className="stat-number">{solvedCases}</span>
                   <span className="stat-label">Solved</span>
                 </div>
                 <div className="stat-item">
-                  <span className="stat-number">{roleData.stats.ongoing}</span>
+                  <span className="stat-number">{ongoingCases}</span>
                   <span className="stat-label">Ongoing</span>
                 </div>
                 <div className="stat-item">
-                  <span className="stat-number">
-                    {roleData.stats.total > 0 
-                      ? Math.round((roleData.stats.solved / roleData.stats.total) * 100) 
-                      : 0}%
-                  </span>
+                  <span className="stat-number">{successRate}%</span>
                   <span className="stat-label">Success Rate</span>
                 </div>
               </div>
@@ -1461,44 +2853,53 @@ Generated via LegalMitra Case Management System
               <h4>⚖️ Specializations</h4>
               <div className="specialization-list">
                 <div className="specialization-item">
-                  <span>Criminal Law</span>
+                  <span>{specialization}</span>
                   <span className="stars">⭐⭐⭐⭐⭐</span>
                 </div>
                 <div className="specialization-item">
-                  <span>Family Law</span>
-                  <span className="stars">⭐⭐⭐⭐☆</span>
+                  <span>Legal Consultation</span>
+                  <span className="stars">⭐⭐⭐⭐⭐</span>
                 </div>
                 <div className="specialization-item">
-                  <span>Corporate Law</span>
+                  <span>Case Management</span>
                   <span className="stars">⭐⭐⭐⭐☆</span>
                 </div>
               </div>
             </div>
 
+            <div className="experience-section">
+              <h4>💼 Professional Experience</h4>
+              <div className="experience-item">
+                <span className="exp-icon">🎓</span>
+                <span>{experience}+ years of legal practice</span>
+              </div>
+              <div className="experience-item">
+                <span className="exp-icon">⚖️</span>
+                <span>Bar Council Verified</span>
+              </div>
+              <div className="experience-item">
+                <span className="exp-icon">📈</span>
+                <span>{successRate}% case success rate</span>
+              </div>
+            </div>
+
             <div className="contact-info">
-              <h4>📞 Contact</h4>
+              <h4>📞 Contact Information</h4>
               <div className="contact-item" style={{backgroundColor:'rgba(100, 116, 139, 0.1)'}}>
                 <span className="contact-icon">📧</span>
                 <span>{user?.email || 'email@example.com'}</span>
               </div>
               <div className="contact-item" style={{backgroundColor:'rgba(100, 116, 139, 0.1)'}}>
                 <span className="contact-icon">📱</span>
-                <span>+1 (555) 123-4567</span>
+                <span>{phone}</span>
               </div>
-              <div className="contact-item" style={{backgroundColor:'rgba(100, 116, 139, 0.1)'}} >
+              <div className="contact-item" style={{backgroundColor:'rgba(100, 116, 139, 0.1)'}}>
                 <span className="contact-icon">🏢</span>
-                <span>Supreme Court Bar Member</span>
+                <span>{address}</span>
               </div>
-            </div>
-
-            <div className="profile-footer">
-              <div className="qr-code">
-                <div className="qr-placeholder">QR Code</div>
-                <span>Scan to contact</span>
-              </div>
-              <div className="signature">
-                <div className="signature-line"></div>
-                <span>Digital Signature</span>
+              <div className="contact-item" style={{backgroundColor:'rgba(100, 116, 139, 0.1)'}}>
+                <span className="contact-icon">🔒</span>
+                <span>Bar Council: {barCouncilNumber}</span>
               </div>
             </div>
           </div>
@@ -1513,10 +2914,6 @@ Generated via LegalMitra Case Management System
               <span className="btn-icon">📄</span>
               Download as PDF
             </button>
-            <button className="download-btn tertiary" onClick={copyProfileShareableLink}>
-              <span className="btn-icon">🔗</span>
-              Copy Shareable Link
-            </button>
           </div>
 
           <div className="profile-card-note">
@@ -1526,7 +2923,7 @@ Generated via LegalMitra Case Management System
       </div>
     </div>
   );
-
+};
   const createRazorpayOrder = async (amount) => {
     try {
       const token = localStorage.getItem('token');
@@ -2002,11 +3399,10 @@ Generated via LegalMitra Case Management System
         const ongoing = lawyerCases.filter(c => c.status === 'ongoing').length;
         const solved = lawyerCases.filter(c => c.status === 'solved').length;
         const highPriority = lawyerCases.filter(c => c.priority === 'high').length;
-        const totalValue = lawyerCases.reduce((sum, c) => {
-          const value = parseInt(c.caseValue?.replace(/[^0-9]/g, '')) || 0;
-          return sum + value;
-        }, 0);
-        
+          // ✅ FIXED: Calculate actual revenue from client payments
+      const totalValue = lawyerCases.reduce((sum, c) => {
+        return sum + (c.clientPayment?.amountPaid || 0);
+      }, 0);
         return {
           cases: lawyerCases,
           stats: { ongoing, solved, highPriority, total: lawyerCases.length, totalValue },
@@ -2709,6 +4105,160 @@ Generated via LegalMitra Case Management System
   );
 };
 
+
+// Cloudinary Document Upload Function
+const uploadToCloudinary = (files, folder = 'general') => {
+  return new Promise((resolve, reject) => {
+    // Check if Cloudinary widget is available
+    if (!window.cloudinary) {
+      reject(new Error('Cloudinary widget not loaded'));
+      return;
+    }
+
+    const uploadWidget = window.cloudinary.createUploadWidget(
+      {
+        cloudName: CLOUDINARY_CONFIG.cloudName,
+        uploadPreset: CLOUDINARY_CONFIG.uploadPreset,
+        folder: `legalmitra/cases/${selectedCaseForVault._id}/${folder}`,
+        multiple: true,
+        maxFiles: 10,
+        maxFileSize: DOCUMENT_SETTINGS.maxFileSize,
+        clientAllowedFormats: DOCUMENT_SETTINGS.allowedFormats,
+        sources: ['local'],
+        showAdvancedOptions: false,
+        cropping: false
+      },
+      (error, result) => {
+        if (!error && result && result.event === 'success') {
+          // File uploaded successfully
+          const fileData = {
+            id: result.info.public_id,
+            name: result.info.original_filename,
+            type: result.info.resource_type,
+            size: result.info.bytes,
+            uploadDate: new Date().toISOString(),
+            folder: folder,
+            url: result.info.secure_url,
+            publicId: result.info.public_id,
+            format: result.info.format
+          };
+          resolve(fileData);
+        } else if (error) {
+          reject(error);
+        }
+      }
+    );
+
+    // Open the upload widget
+    uploadWidget.open();
+  });
+};
+
+// Updated handleFileUpload function
+// Cloudinary Document Upload Function
+const handleFileUpload = async (folder = 'general') => {
+  if (!selectedCaseForVault) {
+    alert('❌ No case selected for document upload');
+    return;
+  }
+
+  setUploading(true);
+
+  try {
+    // Check if Cloudinary widget script is loaded
+    if (!window.cloudinary) {
+      console.log('🌐 Loading Cloudinary widget script...');
+      await new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'https://upload-widget.cloudinary.com/global/all.js';
+        script.onload = () => {
+          console.log('✅ Cloudinary widget script loaded');
+          resolve();
+        };
+        script.onerror = () => {
+          console.error('❌ Failed to load Cloudinary widget script');
+          reject(new Error('Failed to load Cloudinary script'));
+        };
+        document.head.appendChild(script);
+      });
+    }
+
+    console.log('📤 Opening Cloudinary upload widget...');
+    
+    const uploadWidget = window.cloudinary.createUploadWidget(
+      {
+        cloudName: CLOUDINARY_CONFIG.cloudName, // You need to set this!
+        uploadPreset: CLOUDINARY_CONFIG.uploadPreset,
+        folder: `legalmitra/documents/${selectedCaseForVault._id}/${folder}`,
+        multiple: true,
+        maxFiles: 10,
+        resourceType: 'auto',
+        clientAllowedFormats: DOCUMENT_SETTINGS.allowedFormats,
+        maxFileSize: DOCUMENT_SETTINGS.maxFileSize,
+        sources: ['local', 'camera', 'url'],
+        showAdvancedOptions: false,
+        cropping: false,
+        showPoweredBy: false,
+        theme: 'minimal'
+      },
+      (error, result) => {
+        console.log('📦 Cloudinary upload callback:', { error, result });
+        
+        if (!error && result && result.event === 'success') {
+          console.log('✅ File uploaded successfully:', result.info);
+          
+          // Handle successful upload
+          const updatedDocuments = { ...documents };
+          const caseId = selectedCaseForVault._id;
+
+          if (!updatedDocuments[caseId]) {
+            updatedDocuments[caseId] = {};
+          }
+
+          if (!updatedDocuments[caseId][folder]) {
+            updatedDocuments[caseId][folder] = [];
+          }
+
+          const fileData = {
+            id: result.info.public_id,
+            name: result.info.original_filename,
+            type: result.info.resource_type,
+            size: result.info.bytes,
+            uploadDate: new Date().toISOString(),
+            folder: folder,
+            url: result.info.secure_url,
+            publicId: result.info.public_id,
+            format: result.info.format,
+            thumbnailUrl: result.info.thumbnail_url
+          };
+
+          updatedDocuments[caseId][folder].push(fileData);
+          setDocuments(updatedDocuments);
+          localStorage.setItem('caseDocuments', JSON.stringify(updatedDocuments));
+          
+          alert(`✅ File "${result.info.original_filename}" uploaded successfully!`);
+        } else if (error) {
+          console.error('❌ Upload error:', error);
+          alert(`❌ Upload failed: ${error.message}`);
+        } else if (result && result.event === 'close') {
+          console.log('📤 Upload widget closed by user');
+        } else if (result && result.event === 'queues-start') {
+          console.log('🚀 Upload started');
+        } else if (result && result.event === 'queues-end') {
+          console.log('🏁 Upload completed');
+        }
+      }
+    );
+
+    uploadWidget.open();
+  } catch (error) {
+    console.error('💥 Error in handleFileUpload:', error);
+    alert('❌ Error opening upload interface. Please check your Cloudinary configuration.');
+  } finally {
+    setUploading(false);
+  }
+};
+
   const renderStats = () => {
     if (user?.role === 'lawyer') {
       return (
@@ -2793,255 +4343,560 @@ Generated via LegalMitra Case Management System
     }
   };
 
+  
+
   const renderCaseCard = (caseItem) => {
-    if (user?.role === 'lawyer') {
-      return (
-        <div key={caseItem._id} className={`case-card ${caseItem.priority} ${caseItem.status}`}>
-          <div className="case-header" onClick={() => toggleCaseExpand(caseItem._id)}>
-            <div className="case-title-section">
-              <h3>{caseItem.caseName}</h3>
-              <div className="case-meta">
-                <span className="case-number">{caseItem.caseNumber || 'N/A'}</span>
-                <span className={`status-badge ${caseItem.status}`}>
-                  {caseItem.status === 'ongoing' ? '📋' : '✅'} {caseItem.status}
-                </span>
-                <span className={`priority-badge ${caseItem.priority}`}>
-                  {caseItem.priority === 'high' ? '🔴' : caseItem.priority === 'medium' ? '🟡' : '🟢'} {caseItem.priority}
-                </span>
-              </div>
+  if (user?.role === 'lawyer') {
+    const { clientPayment } = caseItem;
+    const balanceDue = (clientPayment?.agreedAmount || 0) - (clientPayment?.amountPaid || 0);
+    const paymentPercentage = clientPayment?.agreedAmount > 0 ? 
+      Math.round(((clientPayment?.amountPaid || 0) / clientPayment?.agreedAmount) * 100) : 0;
+    const daysRemaining = clientPayment?.dueDate ? 
+      Math.ceil((new Date(clientPayment.dueDate) - new Date()) / (1000 * 60 * 60 * 24)) : null;
+
+    return (
+      <div key={caseItem._id} className={`case-card ${caseItem.priority} ${caseItem.status}`}>
+        <div className="case-header" onClick={() => toggleCaseExpand(caseItem._id)}>
+          <div className="case-title-section">
+            <h3>{caseItem.caseName}</h3>
+            <div className="case-meta">
+              <span className="case-number">{caseItem.caseNumber || 'N/A'}</span>
+              <span className={`status-badge ${caseItem.status}`}>
+                {caseItem.status === 'ongoing' ? '📋' : '✅'} {caseItem.status}
+              </span>
+              {getClientPaymentBadge(caseItem.clientPayment)}
+              <span className={`priority-badge ${caseItem.priority}`}>
+                {caseItem.priority === 'high' ? '🔴' : caseItem.priority === 'medium' ? '🟡' : '🟢'} {caseItem.priority}
+              </span>
             </div>
-            <div className="case-header-actions">
-              {/* Call Button - Only show for lawyers */}
-              {user?.role === 'lawyer' && (
-                <button 
-                  className="call-client-btn"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openCallOptions(caseItem);
-                  }}
-                  title="Contact Client"
-                >
-                  <span className="call-icon">📞</span>
-                </button>
-              )}
-              <button className="expand-btn">
-                {expandedCase === caseItem._id ? '▲' : '▼'}
+          </div>
+          <div className="case-header-actions">
+            {user?.role === 'lawyer' && (
+              <button 
+                className="call-client-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openCallOptions(caseItem);
+                }}
+                title="Contact Client"
+              >
+                <span className="call-icon">📞</span>
               </button>
-            </div>
-          </div>
-
-          <div className="case-summary">
-            <div className="summary-item">
-              <span className="summary-icon">👤</span>
-              <span>{caseItem.clientName}</span>
-            </div>
-            <div className="summary-item">
-              <span className="summary-icon">⚖️</span>
-              <span>{caseItem.caseType}</span>
-            </div>
-            <div className="summary-item">
-              <span className="summary-icon">🏛️</span>
-              <span>{caseItem.courtName || 'N/A'}</span>
-            </div>
-          </div>
-
-          {expandedCase === caseItem._id && (
-            <div className="case-details">
-              <div className="details-grid">
-                <div className="detail-section">
-                  <h4>Client Information</h4>
-                  <div className="detail-item">
-                    <strong>Name:</strong> {caseItem.clientName}
-                  </div>
-                  <div className="detail-item">
-                    <strong>Email:</strong> {caseItem.clientEmail}
-                  </div>
-                  <div className="detail-item">
-                    <strong>Phone:</strong> {caseItem.clientPhone}
-                  </div>
-                </div>
-
-                <div className="detail-section">
-                  <h4>Case Information</h4>
-                  <div className="detail-item">
-                    <strong>Case Number:</strong> {caseItem.caseNumber || 'N/A'}
-                  </div>
-                  <div className="detail-item">
-                    <strong>Court:</strong> {caseItem.courtName || 'N/A'}
-                  </div>
-                  <div className="detail-item">
-                    <strong>Next Hearing:</strong> {caseItem.nextHearing ? new Date(caseItem.nextHearing).toLocaleDateString() : 'N/A'}
-                  </div>
-                </div>
-
-                <div className="detail-section full-width" style={{color:'white'}}>
-                  <h4>Case Description</h4>
-                  <p>{caseItem.description}</p>
-                </div>
-
-                <div className="detail-section full-width">
-                  <h4>Case Notes</h4>
-                  <textarea
-                    placeholder="Add your case notes here..."
-                    value={caseNotes[caseItem._id] || caseItem.notes || ''}
-                    onChange={(e) => handleNoteChange(caseItem._id, e.target.value)}
-                    className="notes-textarea"
-                    rows="4"
-                  />
-                </div>
-              </div>
-
-              <div className="case-actions">
-                <div className="action-buttons-container">
-                  {/* Contact Client Button - Only for lawyers */}
-                  {user?.role === 'lawyer' && (
-                    <button 
-                      className="contact-client-action-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        console.log('📞 Opening contact popup for:', caseItem.clientName);
-                        openContactPopup(caseItem);
-                      }}
-                      title="View Contact Details"
-                    >
-                      <span className="action-icon">👤</span>
-                      Contact Details
-                    </button>
-                  )}
-                  
-                  <button 
-                    className={`status-btn ${caseItem.status === 'ongoing' ? 'solved' : 'ongoing'}`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      updateCaseStatus(caseItem._id, caseItem.status === 'ongoing' ? 'solved' : 'ongoing');
-                    }}
-                  >
-                    <span className="action-icon">
-                      {caseItem.status === 'ongoing' ? '✅' : '📋'}
-                    </span>
-                    {caseItem.status === 'ongoing' ? 'Mark as Solved' : 'Reopen Case'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      );
-    } else if (user?.role === 'client') {
-      const totalExpenses = calculateTotalExpenses(caseItem._id);
-      const amountPaid = calculateAmountPaid(caseItem._id);
-      const balanceDue = calculateBalanceDue(caseItem._id);
-      return (
-        <div key={caseItem._id} className={`case-card ${caseItem.status}`}>
-          <div className="case-header" onClick={() => toggleCaseExpand(caseItem._id)}>
-            <div className="case-title-section">
-              <h3>{caseItem.caseName}</h3>
-              <div className="case-meta">
-                <span className="case-number">{caseItem.caseNumber || 'N/A'}</span>
-                <span className={`status-badge ${caseItem.status}`}>
-                  {caseItem.status === 'ongoing' ? '📋' : '✅'} {caseItem.status}
-                </span>
-                {/* Expense Summary Badge */}
-                <span className={`expense-badge ${balanceDue === 0 ? 'paid' : balanceDue > 0 ? 'pending' : 'overpaid'}`}>
-                  {balanceDue === 0 ? '💰 Paid' : balanceDue > 0 ? `₹${balanceDue}` : '💳 Credit'}
-                </span>
-              </div>
-            </div>
+            )}
             <button className="expand-btn">
               {expandedCase === caseItem._id ? '▲' : '▼'}
             </button>
           </div>
+        </div>
 
-          <div className="case-summary">
-            <div className="summary-item">
-              <span className="summary-icon">👨‍⚖️</span>
-              <span>Lawyer: {caseItem.lawyerName}</span>
-            </div>
-            <div className="summary-item">
-              <span className="summary-icon">⚖️</span>
-              <span>{caseItem.caseType}</span>
-            </div>
-            <div className="summary-item">
-              <span className="summary-icon">📅</span>
-              <span>Next: {caseItem.nextHearing ? new Date(caseItem.nextHearing).toLocaleDateString() : 'N/A'}</span>
-            </div>
+        <div className="case-summary">
+          <div className="summary-item">
+            <span className="summary-icon">👤</span>
+            <span>{caseItem.clientName}</span>
           </div>
+          <div className="summary-item">
+            <span className="summary-icon">⚖️</span>
+            <span>{caseItem.caseType}</span>
+          </div>
+          <div className="summary-item">
+            <span className="summary-icon">🏛️</span>
+            <span>{caseItem.courtName || 'N/A'}</span>
+          </div>
+        </div>
 
-          {expandedCase === caseItem._id && (
-            <div className="case-details">
-              <div className="details-grid">
-                <div className="detail-section">
-                  <h4>Your Lawyer</h4>
-                  <div className="detail-item">
-                    <strong>Name:</strong> {caseItem.lawyerName}
-                  </div>
-                  <div className="detail-item">
-                    <strong>Email:</strong> {caseItem.lawyerEmail}
-                  </div>
+        {expandedCase === caseItem._id && (
+          <div className="case-details">
+            <div className="details-grid">
+              <div className="detail-section">
+                <h4>Client Information</h4>
+                <div className="detail-item">
+                  <strong>Name:</strong> {caseItem.clientName}
                 </div>
-
-                <div className="detail-section">
-                  <h4>Case Information</h4>
-                  <div className="detail-item">
-                    <strong>Case Number:</strong> {caseItem.caseNumber || 'N/A'}
-                  </div>
-                  <div className="detail-item">
-                    <strong>Court:</strong> {caseItem.courtName || 'N/A'}
-                  </div>
-                  <div className="detail-item">
-                    <strong>Next Hearing:</strong> {caseItem.nextHearing ? new Date(caseItem.nextHearing).toLocaleDateString() : 'N/A'}
-                  </div>
+                <div className="detail-item">
+                  <strong>Email:</strong> {caseItem.clientEmail}
                 </div>
-
-                {/* Expense Summary Section */}
-                <div className="detail-section">
-                  <h4>💼 Expense Summary</h4>
-                  <div className="expense-mini-summary">
-                    <div className="expense-mini-item">
-                      <strong>Total Cost:</strong> ₹{totalExpenses.toLocaleString()}
-                    </div>
-                    <div className="expense-mini-item">
-                      <strong>Paid:</strong> ₹{amountPaid.toLocaleString()}
-                    </div>
-                    <div className="expense-mini-item">
-                      <strong>Balance:</strong> 
-                      <span className={balanceDue === 0 ? 'expense-paid' : balanceDue > 0 ? 'expense-due' : 'expense-credit'}>
-                        ₹{balanceDue.toLocaleString()}
-                      </span>
-                    </div>
-                  </div>
+                <div className="detail-item">
+                  <strong>Phone:</strong> {caseItem.clientPhone}
                 </div>
-
-                <div className="detail-section full-width">
-                  <h4>Case Description</h4>
-                  <p>{caseItem.caseDescription || caseItem.description}</p>
+                <div className="detail-item">
+                  <strong>Address:</strong> {caseItem.clientAddress}
                 </div>
               </div>
 
-              <div className="case-actions">
-                {/* Expense Calculator Button */}
-                <button 
-                  className="expense-calculator-btn"
-                  onClick={() => openExpenseCalculator(caseItem)}
-                >
-                  <span className="action-icon">💰</span>
-                  Expense Calculator
-                </button>
+              <div className="detail-section">
+                <h4>Case Information</h4>
+                <div className="detail-item">
+                  <strong>Case Number:</strong> {caseItem.caseNumber || 'N/A'}
+                </div>
+                <div className="detail-item">
+                  <strong>Court:</strong> {caseItem.courtName || 'N/A'}
+                </div>
+                <div className="detail-item">
+                  <strong>Filing Date:</strong> {caseItem.filingDate ? new Date(caseItem.filingDate).toLocaleDateString() : 'N/A'}
+                </div>
+                <div className="detail-item">
+                  <strong>Next Hearing:</strong> {caseItem.nextHearing ? new Date(caseItem.nextHearing).toLocaleDateString() : 'N/A'}
+                </div>
+              </div>
+              {/* Additional Case Information */}
+              <div className="detail-section">
+                <h4>Case Details</h4>
+                <div className="detail-item">
+                  <strong>Case Value:</strong> {caseItem.caseValue || 'N/A'}
+                </div>
+                <div className="detail-item">
+                  <strong>Opponent:</strong> {caseItem.opponentName || 'N/A'}
+                </div>
+                <div className="detail-item">
+                  <strong>Opponent Lawyer:</strong> {caseItem.opponentLawyer || 'N/A'}
+                </div>
+                <div className="detail-item">
+                  <strong>Priority:</strong> 
+                  <span className={`priority-badge ${caseItem.priority}`}>
+                    {caseItem.priority}
+                  </span>
+                </div>
+              </div>
+
+              <div className="detail-section full-width">
+                <h4>Case Description</h4>
+                <p>{caseItem.description || 'No description provided.'}</p>
+              </div>
+
+              <div className="detail-section full-width">
+                <h4>Case Notes</h4>
+                <textarea
+                  placeholder="Add your case notes here..."
+                  value={caseNotes[caseItem._id] || caseItem.notes || ''}
+                  onChange={(e) => handleNoteChange(caseItem._id, e.target.value)}
+                  className="notes-textarea"
+                  rows="4"
+                />
+              </div>
+
+              {/* Enhanced Client Payment Section */}
+              <div className="detail-section full-width">
+                <h4>💳 Client Payment Dashboard</h4>
+                
+                {/* Payment Status Cards Grid */}
+                <div className="payment-cards-grid">
+                  {/* Payment Status Card */}
+                  <div className="payment-status-card">
+                    <div className="payment-card-header">
+                      <span className="payment-card-icon">📊</span>
+                      <h5>Payment Status</h5>
+                    </div>
+                    <div className="payment-card-content">
+                      <div className={`payment-status-badge-large ${clientPayment?.status || 'unpaid'}`}>
+                        <span className="status-text">
+                          {clientPayment?.status === 'paid' && '✅ Fully Paid'}
+                          {clientPayment?.status === 'partially_paid' && '🟡 Partially Paid'}
+                          {clientPayment?.status === 'unpaid' && '🔴 Unpaid'}
+                          {clientPayment?.status === 'overdue' && '🚨 Overdue'}
+                          {clientPayment?.status === 'refunded' && '↩️ Refunded'}
+                          {!clientPayment?.status && '🔴 Unpaid'}
+                        </span>
+                      </div>
+                      <div className="payment-progress">
+                        <div className="progress-bar">
+                          <div 
+                            className="progress-fill"
+                            style={{ width: `${paymentPercentage}%` }}
+                          ></div>
+                        </div>
+                        <span className="progress-text">{paymentPercentage}% Paid</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Financial Summary Card */}
+                  <div className="payment-status-card">
+                    <div className="payment-card-header">
+                      <span className="payment-card-icon">💰</span>
+                      <h5>Financial Summary</h5>
+                    </div>
+                    <div className="payment-card-content">
+                      <div className="financial-stats">
+                        <div className="financial-item">
+                          <span className="financial-label">Agreed Amount:</span>
+                          <span className="financial-value">₹{(clientPayment?.agreedAmount || 0).toLocaleString()}</span>
+                        </div>
+                        <div className="financial-item">
+                          <span className="financial-label">Amount Paid:</span>
+                          <span className="financial-value paid">₹{(clientPayment?.amountPaid || 0).toLocaleString()}</span>
+                        </div>
+                        <div className="financial-item">
+                          <span className="financial-label">Balance Due:</span>
+                          <span className={`financial-value ${balanceDue > 0 ? 'due' : 'paid'}`}>
+                            ₹{balanceDue.toLocaleString()}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Payment Timeline Card */}
+                  <div className="payment-status-card">
+                    <div className="payment-card-header">
+                      <span className="payment-card-icon">📅</span>
+                      <h5>Payment Timeline</h5>
+                    </div>
+                    <div className="payment-card-content">
+                      <div className="timeline-info">
+                        <div className="timeline-item">
+                          <span className="timeline-label">Due Date:</span>
+                          <span className="timeline-value">
+                            {clientPayment?.dueDate ? new Date(clientPayment.dueDate).toLocaleDateString() : 'Not set'}
+                          </span>
+                        </div>
+                        <div className="timeline-item">
+                          <span className="timeline-label">Last Payment:</span>
+                          <span className="timeline-value">
+                            {clientPayment?.lastPaymentDate ? new Date(clientPayment.lastPaymentDate).toLocaleDateString() : 'No payments'}
+                          </span>
+                        </div>
+                        <div className="timeline-item">
+                          <span className="timeline-label">Days Remaining:</span>
+                          <span className={`timeline-value ${daysRemaining !== null && daysRemaining < 0 ? 'overdue' : 'normal'}`}>
+                            {daysRemaining !== null ? 
+                              (daysRemaining < 0 ? `${Math.abs(daysRemaining)} days overdue` : `${daysRemaining} days`) : 
+                              'N/A'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+
+                {/* Payment Controls Section */}
+                <div className="payment-controls-section">
+                  <h5>Update Payment Information</h5>
+                  
+                  <div className="payment-controls-grid">
+                    {/* Status Control */}
+                    <div className="control-group">
+                      <label>Payment Status</label>
+                      <select 
+                        value={clientPayment?.status || 'unpaid'}
+                        onChange={(e) => updateClientPaymentStatus(caseItem._id, {
+                          status: e.target.value,
+                          amountPaid: clientPayment?.amountPaid || 0,
+                          agreedAmount: clientPayment?.agreedAmount || 0,
+                          dueDate: clientPayment?.dueDate
+                        })}
+                        className="payment-select"
+                      >
+                        <option value="unpaid">Unpaid</option>
+                        <option value="partially_paid">Partially Paid</option>
+                        <option value="paid">Paid</option>
+                        <option value="overdue">Overdue</option>
+                        <option value="refunded">Refunded</option>
+                      </select>
+                    </div>
+
+                    {/* Amount Controls */}
+                    <div className="control-group">
+                      <label>Agreed Amount (₹)</label>
+                      <input
+                        type="number"
+                        placeholder="Enter agreed amount"
+                        value={clientPayment?.agreedAmount || ''}
+                        onChange={(e) => updateClientPaymentStatus(caseItem._id, {
+                          status: clientPayment?.status || 'unpaid',
+                          agreedAmount: parseInt(e.target.value) || 0,
+                          amountPaid: clientPayment?.amountPaid || 0,
+                          dueDate: clientPayment?.dueDate
+                        })}
+                        className="payment-input"
+                      />
+                    </div>
+
+                    <div className="control-group">
+                      <label>Amount Paid (₹)</label>
+                      <input
+                        type="number"
+                        placeholder="Enter paid amount"
+                        value={clientPayment?.amountPaid || ''}
+                        onChange={(e) => updateClientPaymentStatus(caseItem._id, {
+                          status: clientPayment?.status || 'unpaid',
+                          amountPaid: parseInt(e.target.value) || 0,
+                          agreedAmount: clientPayment?.agreedAmount || 0,
+                          dueDate: clientPayment?.dueDate
+                        })}
+                        className="payment-input"
+                      />
+                    </div>
+
+                    {/* Due Date Control */}
+                    <div className="control-group">
+                      <label>Due Date</label>
+                      <input
+                        type="date"
+                        value={clientPayment?.dueDate ? new Date(clientPayment.dueDate).toISOString().split('T')[0] : ''}
+                        onChange={(e) => updateClientPaymentStatus(caseItem._id, {
+                          status: clientPayment?.status || 'unpaid',
+                          amountPaid: clientPayment?.amountPaid || 0,
+                          agreedAmount: clientPayment?.agreedAmount || 0,
+                          dueDate: e.target.value
+                        })}
+                        className="payment-input"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Quick Actions */}
+                  <div className="payment-quick-actions">
+                    <button 
+                      className="quick-action-btn mark-paid"
+                      onClick={() => updateClientPaymentStatus(caseItem._id, {
+                        status: 'paid',
+                        amountPaid: clientPayment?.agreedAmount || 0,
+                        agreedAmount: clientPayment?.agreedAmount || 0,
+                        dueDate: clientPayment?.dueDate
+                      })}
+                    >
+                      ✅ Mark as Paid
+                    </button>
+                    <button 
+                      className="quick-action-btn add-payment"
+                      onClick={() => {
+                        const paymentAmount = prompt('Enter payment amount:');
+                        if (paymentAmount && !isNaN(paymentAmount)) {
+                          updateClientPaymentStatus(caseItem._id, {
+                            status: 'partially_paid',
+                            amountPaid: (clientPayment?.amountPaid || 0) + parseInt(paymentAmount),
+                            agreedAmount: clientPayment?.agreedAmount || 0,
+                            dueDate: clientPayment?.dueDate,
+                            paymentNotes: `Payment of ₹${paymentAmount} recorded`
+                          });
+                        }
+                      }}
+                    >
+                      💰 Add Payment
+                    </button>
+                    <button 
+                      className="quick-action-btn set-due"
+                      onClick={() => {
+                        const dueDate = prompt('Enter due date (YYYY-MM-DD):');
+                        if (dueDate) {
+                          updateClientPaymentStatus(caseItem._id, {
+                            status: clientPayment?.status || 'unpaid',
+                            amountPaid: clientPayment?.amountPaid || 0,
+                            agreedAmount: clientPayment?.agreedAmount || 0,
+                            dueDate: dueDate
+                          });
+                        }
+                      }}
+                    >
+                      📅 Set Due Date
+                    </button>
+                  </div>
+                </div>
+
+                {/* Payment History Section */}
+                {clientPayment?.paymentHistory && clientPayment.paymentHistory.length > 0 && (
+                  <div className="payment-history-section">
+                    <h5>Payment History</h5>
+                    <div className="payment-history-list">
+                      {clientPayment.paymentHistory.slice().reverse().map((payment, index) => (
+                        <div key={index} className="payment-history-item">
+                          <div className="payment-history-info">
+                            <span className="payment-amount">₹{payment.amount?.toLocaleString()}</span>
+                            <span className="payment-date">
+                              {new Date(payment.date).toLocaleDateString()}
+                            </span>
+                            {payment.method && (
+                              <span className="payment-method">{payment.method}</span>
+                            )}
+                          </div>
+                          {payment.notes && (
+                            <div className="payment-notes">
+                              📝 {payment.notes}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              
+            </div>
+
+            <div className="case-actions">
+              <div className="action-buttons-container">
+                {/* Contact Client Button - Only for lawyers */}
+                {user?.role === 'lawyer' && (
+                  <button 
+                    className="contact-client-action-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openContactPopup(caseItem);
+                    }}
+                    title="View Contact Details"
+                  >
+                    <span className="action-icon">👤</span>
+                    Contact Details
+                  </button>
+                )}
                 
                 <button 
                   className={`status-btn ${caseItem.status === 'ongoing' ? 'solved' : 'ongoing'}`}
-                  onClick={() => updateClientCaseStatus(caseItem._id, caseItem.status === 'ongoing' ? 'solved' : 'ongoing')}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    updateCaseStatus(caseItem._id, caseItem.status === 'ongoing' ? 'solved' : 'ongoing');
+                  }}
                 >
-                  {caseItem.status === 'ongoing' ? '✅ Mark as Solved' : '📋 Reopen Case'}
+                  <span className="action-icon">
+                    {caseItem.status === 'ongoing' ? '✅' : '📋'}
+                  </span>
+                  {caseItem.status === 'ongoing' ? 'Mark as Solved' : 'Reopen Case'}
+                </button>
+                
+                <button 
+                  className="document-vault-btn"
+                  onClick={() => openDocumentVaultForLawyer(caseItem)}
+                >
+                  <span className="action-icon">📁</span>
+                  Document Vault
                 </button>
               </div>
             </div>
-          )}
+          </div>
+        )}
+      </div>
+    );
+  } else if (user?.role === 'client') {
+    const totalExpenses = calculateTotalExpenses(caseItem._id);
+    const amountPaid = calculateAmountPaid(caseItem._id);
+    const balanceDue = calculateBalanceDue(caseItem._id);
+    
+    return (
+      <div key={caseItem._id} className={`case-card ${caseItem.status}`}>
+        <div className="case-header" onClick={() => toggleCaseExpand(caseItem._id)}>
+          <div className="case-title-section">
+            <h3>{caseItem.caseName}</h3>
+            <div className="case-meta">
+              <span className="case-number">{caseItem.caseNumber || 'N/A'}</span>
+              <span className={`status-badge ${caseItem.status}`}>
+                {caseItem.status === 'ongoing' ? '📋' : '✅'} {caseItem.status}
+              </span>
+              {/* Expense Summary Badge */}
+              <span className={`expense-badge ${balanceDue === 0 ? 'paid' : balanceDue > 0 ? 'pending' : 'overpaid'}`}>
+                {balanceDue === 0 ? '💰 Paid' : balanceDue > 0 ? `₹${balanceDue}` : '💳 Credit'}
+              </span>
+            </div>
+          </div>
+          <button className="expand-btn">
+            {expandedCase === caseItem._id ? '▲' : '▼'}
+          </button>
         </div>
-      );
-    }
-  };
 
+        <div className="case-summary">
+          <div className="summary-item">
+            <span className="summary-icon">👨‍⚖️</span>
+            <span>Lawyer: {caseItem.lawyerName}</span>
+          </div>
+          <div className="summary-item">
+            <span className="summary-icon">⚖️</span>
+            <span>{caseItem.caseType}</span>
+          </div>
+          <div className="summary-item">
+            <span className="summary-icon">📅</span>
+            <span>Next: {caseItem.nextHearing ? new Date(caseItem.nextHearing).toLocaleDateString() : 'N/A'}</span>
+          </div>
+        </div>
+
+        {expandedCase === caseItem._id && (
+          <div className="case-details">
+            <div className="details-grid">
+              <div className="detail-section">
+                <h4>Your Lawyer</h4>
+                <div className="detail-item">
+                  <strong>Name:</strong> {caseItem.lawyerName}
+                </div>
+                <div className="detail-item">
+                  <strong>Email:</strong> {caseItem.lawyerEmail}
+                </div>
+                <div className="detail-item">
+                  <strong>Phone:</strong> {caseItem.lawyerPhone || 'N/A'}
+                </div>
+              </div>
+
+              <div className="detail-section">
+                <h4>Case Information</h4>
+                <div className="detail-item">
+                  <strong>Case Number:</strong> {caseItem.caseNumber || 'N/A'}
+                </div>
+                <div className="detail-item">
+                  <strong>Court:</strong> {caseItem.courtName || 'N/A'}
+                </div>
+                <div className="detail-item">
+                  <strong>Filing Date:</strong> {caseItem.filingDate ? new Date(caseItem.filingDate).toLocaleDateString() : 'N/A'}
+                </div>
+                <div className="detail-item">
+                  <strong>Next Hearing:</strong> {caseItem.nextHearing ? new Date(caseItem.nextHearing).toLocaleDateString() : 'N/A'}
+                </div>
+              </div>
+
+              {/* Expense Summary Section */}
+              <div className="detail-section">
+                <h4>💼 Expense Summary</h4>
+                <div className="expense-mini-summary">
+                  <div className="expense-mini-item">
+                    <strong>Total Cost:</strong> ₹{totalExpenses.toLocaleString()}
+                  </div>
+                  <div className="expense-mini-item">
+                    <strong>Paid:</strong> ₹{amountPaid.toLocaleString()}
+                  </div>
+                  <div className="expense-mini-item">
+                    <strong>Balance:</strong> 
+                    <span className={balanceDue === 0 ? 'expense-paid' : balanceDue > 0 ? 'expense-due' : 'expense-credit'}>
+                      ₹{balanceDue.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="detail-section full-width">
+                <h4>Case Description</h4>
+                <p>{caseItem.caseDescription || caseItem.description || 'No description provided.'}</p>
+              </div>
+            </div>
+
+            <div className="case-actions">
+              {/* Expense Calculator Button */}
+              <button 
+                className="expense-calculator-btn"
+                onClick={() => openExpenseCalculator(caseItem)}
+              >
+                <span className="action-icon">💰</span>
+                Expense Calculator
+              </button>
+
+              <button 
+                className="document-vault-btn"
+                onClick={() => openDocumentVault(caseItem)}
+              >
+                <span className="action-icon">📁</span>
+                Document Vault
+              </button>
+              
+              <button 
+                className={`status-btn ${caseItem.status === 'ongoing' ? 'solved' : 'ongoing'}`}
+                onClick={() => updateClientCaseStatus(caseItem._id, caseItem.status === 'ongoing' ? 'solved' : 'ongoing')}
+              >
+                {caseItem.status === 'ongoing' ? '✅ Mark as Solved' : '📋 Reopen Case'}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+};
   // Contact Popup Function
   const openContactPopup = (caseItem) => {
     setSelectedCaseForCall(caseItem);
@@ -3508,6 +5363,8 @@ Generated via LegalMitra Case Management System
       {renderPaymentStatus()}
       {renderStats()}
 
+       
+
       {/* Add Case Form - Only for Lawyers */}
       {showForm && user?.role === 'lawyer' && renderLawyerForm()}
 
@@ -3525,6 +5382,7 @@ Generated via LegalMitra Case Management System
       {showExpenseCalculator && renderExpenseCalculator()}
       {showCallModal && renderCallModal()}
       {showCallModal && renderContactPopup()}
+        {showClientDetailsModal && renderClientDetailsModal()}
 
       {/* Debug Button - Temporary */}
       {/* <button 
@@ -3555,12 +5413,12 @@ Generated via LegalMitra Case Management System
           </h2>
         </div>
 
-        {isLoading && roleData.cases.length === 0 ? (
-          <div className="loading-state">
-            <div className="loading-spinner"></div>
-            <p>Loading cases...</p>
-          </div>
-        ) : (
+       {(isLoading || (user?.role === 'client' && checkingPayment)) && roleData.cases.length === 0 ? (
+  <div className="loading-state">
+    <div className="loading-spinner"></div>
+    <p>Loading cases...</p>
+  </div>
+) : (
           <div className="cases-grid">
             {roleData.cases.filter(c => c.status === 'ongoing').length > 0 ? (
               roleData.cases.filter(c => c.status === 'ongoing').map(caseItem => renderCaseCard(caseItem))
@@ -3576,6 +5434,116 @@ Generated via LegalMitra Case Management System
 
       {/* SOLVED CASES SECTION */}
       {renderSolvedCasesSection()}
+      {renderClientRequestsSection()}
+      {/* ENHANCED MY REQUESTS SECTION */}
+{user?.role === 'client' && (
+  <div className="requests-section enhanced-requests">
+    <div className="section-header">
+      <h2>📨 My Case Requests</h2>
+      <div className="requests-stats">
+        <span className="stat pending">
+          Pending: {myRequests.filter(req => req.status === 'pending').length}
+        </span>
+        <span className="stat accepted">
+          Accepted: {myRequests.filter(req => req.status === 'accepted').length}
+        </span>
+        <span className="stat declined">
+          Declined: {myRequests.filter(req => req.status === 'declined').length}
+        </span>
+      </div>
+    </div>
+    
+    <div className="requests-container">
+      {myRequests.length > 0 ? (
+        <div className="requests-grid">
+          {myRequests.map(request => (
+            <div key={request._id} className={`request-card enhanced ${request.status}`}>
+              <div className="request-header">
+                <div className="lawyer-info">
+                  <div className="lawyer-avatar">
+                    {request.lawyerId?.name?.charAt(0) || 'L'}
+                  </div>
+                  <div className="lawyer-details">
+                    <h4>To: {request.lawyerId?.name || 'Lawyer'}</h4>
+                    <p className="lawyer-email">{request.lawyerId?.email || ''}</p>
+                  </div>
+                </div>
+                <span className={`status-badge enhanced ${request.status}`}>
+                  {request.status === 'pending' && '⏳ Pending Review'}
+                  {request.status === 'accepted' && '✅ Case Accepted'}
+                  {request.status === 'declined' && '❌ Declined'}
+                </span>
+              </div>
+              
+              <div className="request-body">
+                <div className="case-info">
+                  <div className="info-item">
+                    <span className="info-label">Case Type:</span>
+                    <span className="info-value">{request.caseType}</span>
+                  </div>
+                  <div className="info-item">
+                    <span className="info-label">Priority:</span>
+                    <span className="info-value priority">{request.priority || 'Normal'}</span>
+                  </div>
+                  <div className="info-item">
+                    <span className="info-label">Submitted:</span>
+                    <span className="info-value">
+                      {new Date(request.createdAt).toLocaleDateString()} at {new Date(request.createdAt).toLocaleTimeString()}
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="case-summary">
+                  <strong>Case Summary:</strong>
+                  <p>{request.caseSummary}</p>
+                </div>
+                
+               
+                
+                {request.lawyerResponse && (
+                  <div className={`lawyer-response ${request.status}`}>
+                    <strong>Lawyer's Response:</strong>
+                    <p>{request.lawyerResponse}</p>
+                    {request.responseDate && (
+                      <small>Responded on: {new Date(request.responseDate).toLocaleString()}</small>
+                    )}
+                  </div>
+                )}
+              </div>
+              
+              <div className="request-actions">
+                
+                {request.status === 'pending' && (
+                  <button className="action-btn pending" disabled>
+                    ⏳ Waiting for response
+                  </button>
+                )}
+               
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="empty-requests-state">
+          <div className="empty-icon">📨</div>
+          <h3>No Case Requests Yet</h3>
+          <p>You haven't sent any case requests to lawyers.</p>
+          <div className="empty-actions">
+            <button className="primary-btn" onClick={() => setShowClientCaseForm(true)}>
+              ➕ Add Your First Case
+            </button>
+            <button className="secondary-btn" onClick={fetchMyRequests}>
+              🔄 Refresh Requests
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  </div>
+      )}
+       {renderRequestNotifications()} {/* Add this line */}
+      
+{showDocumentVault && renderDocumentVault()}
     </div>
   );
 };

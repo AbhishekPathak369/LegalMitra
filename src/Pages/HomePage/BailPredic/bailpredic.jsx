@@ -23,8 +23,8 @@ export default function BailPredict() {
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentChecked, setPaymentChecked] = useState(false);
   const [hasPaid, setHasPaid] = useState(false);
-  
-  // NEW STATE FOR CASE PAGINATION
+
+   // NEW STATE FOR CASE PAGINATION
   const [casesToShow, setCasesToShow] = useState(10); // Start with 10 cases
 
   // Filters
@@ -37,10 +37,11 @@ export default function BailPredict() {
   const crimes = [...new Set(casesData.map(c => c.crime_type).filter(Boolean))];
   const regions = [...new Set(casesData.map(c => c.region).filter(Boolean))];
 
-  // NEW FUNCTION TO LOAD MORE CASES
+   // NEW FUNCTION TO LOAD MORE CASES
   const loadMoreCases = () => {
     setCasesToShow(prev => prev + 1); // Load one more case
   };
+
 
   // Fallback localStorage payment check
   const checkLocalStoragePayment = () => {
@@ -173,10 +174,11 @@ export default function BailPredict() {
     filterCases();
   }, [search, courtFilter, crimeFilter, bailFilter, regionFilter]);
 
-  // UPDATE: Reset cases to show when filters change
+    // UPDATE: Reset cases to show when filters change
   useEffect(() => {
     setCasesToShow(10); // Reset to 10 cases when filters change
   }, [search, courtFilter, crimeFilter, bailFilter, regionFilter]);
+
 
   const filterCases = () => {
     let filtered = casesData.filter(c =>
@@ -202,7 +204,7 @@ export default function BailPredict() {
 
     setFilteredCases(filtered);
     
-    // UPDATE: Show only the number of cases specified by casesToShow
+    // const casesToShow = Math.max(filtered.length, 5);
     const cases = filtered.slice(0, casesToShow);
     setDisplayCases(cases);
 
@@ -228,7 +230,7 @@ export default function BailPredict() {
     setMostCommonCrime(Object.keys(crimeCounts).reduce((a, b) => crimeCounts[a] > crimeCounts[b] ? a : b, "N/A"));
   };
 
-  // UPDATE: Add effect to update display cases when casesToShow changes
+   // UPDATE: Add effect to update display cases when casesToShow changes
   useEffect(() => {
     const cases = filteredCases.slice(0, casesToShow);
     setDisplayCases(cases);
@@ -547,7 +549,7 @@ export default function BailPredict() {
   }
 
 
-  console.log('🎯 FINAL RENDER - User paid status:', hasPaid, 'Role:', user.role);
+  
 
   // If user has not paid, show subscription gate
   if (!hasPaid) {
@@ -736,6 +738,7 @@ export default function BailPredict() {
           
           {filteredCases.length > 0 && (
             <p className="bail-cases-count">
+              
               Showing {casesToShow} of {filteredCases.length} cases
             </p>
           )}

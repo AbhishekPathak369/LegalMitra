@@ -1,31 +1,4 @@
-/* Show More Button Styles */
-.bail-show-more-container {
-  display: flex;
-  justify-content: center;
-  margin-top: 1.5rem;
-  margin-bottom: 1rem;
-}
 
-.bail-show-more-btn {
-  background: linear-gradient(135deg, #60a5fa 0%, #8b5cf6 100%);
-  color: white;
-  border: none;
-  padding: 0.8rem 1.5rem;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(96, 165, 250, 0.3);
-}
-
-.bail-show-more-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(96, 165, 250, 0.4);
-}
-
-.bail-show-more-btn:active {
-  transform: translateY(0);
-}
 
 /* Cases Count Text */
 .bail-cases-count {
@@ -39,6 +12,10 @@
   border-radius: 6px;
   border: 1px solid rgba(96, 165, 250, 0.2);
 }
+
+
+
+
 /* BailPredic.css - Professional Dark Theme */
 
 .bail-dashboard {

@@ -493,3 +493,40 @@
 .login-btn {
   animation: fadeInUp 0.8s ease-out;
 }
+
+.social-btn {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: white;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  margin-bottom: 10px;
+}
+
+.social-btn:hover {
+  background: #f5f5f5;
+  border-color: #ccc;
+}
+
+.social-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.google-btn {
+  color: #333;
+}
+
+.linkedin-btn {
+  color: #0077b5;
+}
+
+.social-login {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
