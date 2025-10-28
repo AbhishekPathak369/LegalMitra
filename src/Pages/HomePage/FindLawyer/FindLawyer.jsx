@@ -900,13 +900,7 @@ const FindLawyer = () => {
             </div>
 
             <div className="modal-actions">
-              <button 
-                className="cancel-btn"
-                onClick={() => setShowRequestModal(false)}
-                disabled={isSubmitting}
-              >
-                Cancel
-              </button>
+          
               <button 
                 className="submit-request-btn"
                 onClick={handleSubmitRequest}
