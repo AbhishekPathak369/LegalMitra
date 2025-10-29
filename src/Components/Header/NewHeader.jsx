@@ -121,13 +121,6 @@ const NewHeader = ({ setCurrentPage }) => {
     border: `2px solid ${NAVY_BLUE}`,
   };
 
-  const adminLoginStyle = {
-    ...buttonStyle,
-    backgroundColor: 'transparent',
-    color: '#fbbf24',
-    border: `2px solid #fbbf24`,
-  };
-
   const userMenuStyle = {
     position: 'relative',
   };
@@ -285,7 +278,6 @@ const NewHeader = ({ setCurrentPage }) => {
           <>
             <button style={loginStyle} onClick={handleLoginClick}>Login</button>
             <button style={signupStyle} onClick={handleSignUpClick}>Sign Up</button>
-            <button style={adminLoginStyle} onClick={handleAdminLoginClick}>Admin Login</button>
           </>
         )}
       </div>

@@ -2,7 +2,21 @@
 import React from 'react';
 import './Footer.css';
 
-const Footer = () => {
+const Footer = ({ setCurrentPage }) => {
+  const handleAdminLoginClick = (e) => {
+    e.preventDefault();
+    console.log('Footer: Admin login clicked');
+    
+    // Check if setCurrentPage function exists
+    if (setCurrentPage && typeof setCurrentPage === 'function') {
+      setCurrentPage('admin-login');
+    } else {
+      console.error('setCurrentPage function not available in Footer');
+      // Fallback: redirect to admin login page directly
+      window.location.href = '/admin-login';
+    }
+  };
+
   return (
     <footer className="footer">
       <div className="footer-container">
@@ -65,6 +79,13 @@ const Footer = () => {
             <a href="#privacy">Privacy</a>
             <a href="#terms">Terms</a>
             <a href="#cookies">Cookies</a>
+            <span 
+              className="admin-login-link"
+              onClick={handleAdminLoginClick}
+              title="Admin Login"
+            >
+              Admin
+            </span>
           </div>
           <p className="copyright">© 2025 LegalMitra | Justice Made Accessible</p>
         </div>

@@ -66,7 +66,8 @@ function App() {
         <main className="main-content">
           {renderCurrentPage()}
         </main>
-        <Footer />
+        {/* FIX: Pass setCurrentPage prop to Footer */}
+        <Footer setCurrentPage={setCurrentPage} />
 
         {/* Global Chatbot Widget - Shows on EVERY page */}
         <div className="global-chatbot-widget">
