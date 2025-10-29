@@ -1,14 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom'; // ✅ ADD THIS IMPORT
 import logoImage from '../../assets/logo.png'; 
 import userAvatar from '../../assets/default-avatar.png';
 
-const NewHeader = ({ setCurrentPage }) => {
+const NewHeader = () => { // ✅ REMOVE setCurrentPage prop
   const { user, logout, updateProfilePicture, refreshUserWithProfile } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const dropdownRef = useRef(null);
   const fileInputRef = useRef(null);
+  const navigate = useNavigate(); // ✅ ADD THIS HOOK
 
   const NAVY_BLUE = '#1b2d48'; 
   const VIBRANT_RED = 'red'; 
@@ -166,36 +168,37 @@ const NewHeader = ({ setCurrentPage }) => {
     transition: 'background-color 0.3s',
   };
 
+  // ✅ UPDATED NAVIGATION HANDLERS - USING REACT ROUTER
   const handleSignUpClick = () => {
-    setCurrentPage('registration');
+    navigate('/register'); // ✅ CHANGED
   };
 
   const handleLoginClick = () => {
-    setCurrentPage('login');
+    navigate('/login'); // ✅ CHANGED
   };
 
   const handleAdminLoginClick = () => {
-    setCurrentPage('admin-login');
+    navigate('/admin-login'); // ✅ CHANGED
   };
   
   const handleLogoClick = () => {
-    setCurrentPage('home'); 
+    navigate('/'); // ✅ CHANGED
   };
 
   const handleLogout = () => {
     logout();
     setDropdownOpen(false);
-    setCurrentPage('home');
+    navigate('/'); // ✅ CHANGED
   };
 
   const handleProfileClick = () => {
     setDropdownOpen(false);
-    setCurrentPage('profile');
+    navigate('/profile'); // ✅ CHANGED
   };
 
   const handleAdminDashboardClick = () => {
     setDropdownOpen(false);
-    setCurrentPage('admin-dashboard');
+    navigate('/admin-dashboard'); // ✅ CHANGED
   };
 
   return (

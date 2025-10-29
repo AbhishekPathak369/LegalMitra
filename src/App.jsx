@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import './App.css';
 import NewHeader from './Components/Header/NewHeader';
 import Navbar from './Components/Navbar/Navbar';
@@ -16,83 +17,64 @@ import { AuthProvider } from './context/AuthContext';
 import ProfilePage from './Pages/HomePage/ProfilePage/ProfilePage';
 import AdminLogin from './Components/Admin/AdminLogin';
 import AdminDashboard from './Pages/HomePage/AdminDashboard/AdminDashboard';
-import Chatbot from './Components/Chatbot/Chatbot'; // Import chatbot
+import Chatbot from './Components/Chatbot/Chatbot';
 
 function App() {
-  const [currentPage, setCurrentPage] = useState('home');
-  const [showChatbot, setShowChatbot] = useState(false); // Chatbot state
+  const [showChatbot, setShowChatbot] = useState(false);
 
-  const renderCurrentPage = () => {
-    switch (currentPage) {
-      case 'admin-login':
-        return <AdminLogin setCurrentPage={setCurrentPage} />;
-      case 'admin-dashboard':
-        return <AdminDashboard />;
-      case 'home':
-        return <HomePage setCurrentPage={setCurrentPage} />;
-      case 'law-sections':
-        return <Sections />;
-      case 'predict-bail':
-        return <BailPredic />;
-      case 'find-lawyer':
-        return <FindLawyer />;
-      case 'registration':
-        return <Registration setCurrentPage={setCurrentPage} />;
-      case 'login':
-        return <Login setCurrentPage={setCurrentPage} />;
-      case 'faq':
-        return <FAQ />;
-      case 'about':
-        return <AboutUs />;
-      case 'my-collection':
-        return <MyCollection />;
-      case 'profile':
-        return <ProfilePage />;
-      default:
-        return <HomePage setCurrentPage={setCurrentPage} />;
-    }
-  };
-
-  // Toggle chatbot visibility
   const toggleChatbot = () => {
     setShowChatbot(!showChatbot);
   };
 
   return (
     <AuthProvider>
-      <div className="App">
-        <NewHeader setCurrentPage={setCurrentPage} />
-        <Navbar currentPage={currentPage} setCurrentPage={setCurrentPage} />
-        <main className="main-content">
-          {renderCurrentPage()}
-        </main>
-        {/* FIX: Pass setCurrentPage prop to Footer */}
-        <Footer setCurrentPage={setCurrentPage} />
+      <Router>
+        <div className="App">
+          <NewHeader />
+          <Navbar />
+          <main className="main-content">
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/home" element={<HomePage />} />
+              <Route path="/law-sections" element={<Sections />} />
+              <Route path="/predict-bail" element={<BailPredic />} />
+              <Route path="/find-lawyer" element={<FindLawyer />} />
+              <Route path="/register" element={<Registration />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/faq" element={<FAQ />} />
+              <Route path="/about" element={<AboutUs />} />
+              <Route path="/my-collection" element={<MyCollection />} />
+              <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/admin-login" element={<AdminLogin />} />
+              <Route path="/admin-dashboard" element={<AdminDashboard />} />
+              {/* Add more routes as needed */}
+            </Routes>
+          </main>
+          <Footer />
 
-        {/* Global Chatbot Widget - Shows on EVERY page */}
-        <div className="global-chatbot-widget">
-          {/* Chatbot Toggle Button */}
-          <button 
-            className={`chatbot-toggle-btn ${showChatbot ? 'active' : ''}`}
-            onClick={toggleChatbot}
-            aria-label="Toggle chatbot"
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <path 
-                d="M20 2H4C2.9 2 2 2.9 2 4V22L6 18H20C21.1 18 22 17.1 22 16V4C22 2.9 21.1 2 20 2Z" 
-                fill="currentColor"
-              />
-            </svg>
-          </button>
+          {/* Global Chatbot Widget */}
+          <div className="global-chatbot-widget">
+            <button 
+              className={`chatbot-toggle-btn ${showChatbot ? 'active' : ''}`}
+              onClick={toggleChatbot}
+              aria-label="Toggle chatbot"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path 
+                  d="M20 2H4C2.9 2 2 2.9 2 4V22L6 18H20C21.1 18 22 17.1 22 16V4C22 2.9 21.1 2 20 2Z" 
+                  fill="currentColor"
+                />
+              </svg>
+            </button>
 
-          {/* Chatbot Container */}
-          {showChatbot && (
-            <div className="global-chatbot-container">
-              <Chatbot />
-            </div>
-          )}
+            {showChatbot && (
+              <div className="global-chatbot-container">
+                <Chatbot />
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      </Router>
     </AuthProvider>
   );
 }
