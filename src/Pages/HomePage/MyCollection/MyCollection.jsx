@@ -523,11 +523,6 @@ const showClientNotification = (request) => {
     return; // Already shown, don't show again
   }
 
-  if (request.status === 'accepted') {
-    alert(`🎉 Great news! ${request.lawyerId?.name} has accepted your case request!`);
-  } else if (request.status === 'declined') {
-    alert(`ℹ️ ${request.lawyerId?.name} has declined your case request.`);
-  }
   
   // Mark this notification as shown
   localStorage.setItem(notificationKey, 'true');

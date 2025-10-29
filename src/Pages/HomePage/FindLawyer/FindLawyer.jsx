@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import './FindLawyer.css';
+import styles from './FindLawyer.module.css'; // CSS Modules import
 import lawyersData from './lawyers_dataset.json';
-import { PRICING } from '../../../config/pricing'; // Adjust path as needed
+import { PRICING } from '../../../config/pricing';
 
 const FindLawyer = () => {
+  // All your existing state remains exactly the same
   const [allLawyers, setAllLawyers] = useState([]);
   const [teamLawyers, setTeamLawyers] = useState([]);
   const [otherLawyers, setOtherLawyers] = useState([]);
@@ -15,14 +16,12 @@ const FindLawyer = () => {
   const [sortBy, setSortBy] = useState('');
   const [loading, setLoading] = useState(true);
   
-  // REQUEST SYSTEM STATE
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [selectedLawyer, setSelectedLawyer] = useState(null);
   const [caseSummary, setCaseSummary] = useState('');
   const [caseType, setCaseType] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // PAYMENT STATE
   const [hasPaidClient, setHasPaidClient] = useState(() => {
     const savedPaymentStatus = localStorage.getItem('userHasPaidClient');
     return savedPaymentStatus === 'true';
@@ -32,7 +31,6 @@ const FindLawyer = () => {
   const [clientPaymentLoading, setClientPaymentLoading] = useState(false);
   const [clientRequestDataBeforePayment, setClientRequestDataBeforePayment] = useState(null);
   
-  // PAGINATION STATE
   const [otherLawyersToShow, setOtherLawyersToShow] = useState(10);
 
   // Check client payment status on component load
@@ -65,13 +63,11 @@ const FindLawyer = () => {
         console.log('✅ Client payment status updated to:', data.hasPaid);
       } else {
         console.error('❌ Failed to check client payment status:', data.error);
-        // Fallback to localStorage
         const savedStatus = localStorage.getItem('userHasPaidClient');
         setHasPaidClient(savedStatus === 'true');
       }
     } catch (error) {
       console.error('💥 Error checking client payment status:', error);
-      // Fallback to localStorage on error
       const savedStatus = localStorage.getItem('userHasPaidClient');
       setHasPaidClient(savedStatus === 'true');
     } finally {
@@ -94,20 +90,19 @@ const FindLawyer = () => {
       console.log('📦 Team lawyers API response:', data);
       
       if (data.success && data.lawyers) {
-        // Transform backend data to match frontend structure
         const transformedTeamLawyers = data.lawyers.map(lawyer => ({
           id: lawyer._id,
           name: lawyer.name,
           location: lawyer.address || 'Location not specified',
           speciality: lawyer.specialization ? [lawyer.specialization] : ['General Practice'],
-          rating: 4.5, // Default high rating for team lawyers
+          rating: 4.5,
           experience: lawyer.experience || 1,
-          gender: 'M', // Default gender
+          gender: 'M',
           jurisdiction: 'Multiple Courts',
           clientType: 'Individual & Corporate',
           avgDaysOfCompletion: 45,
           languages: ['English', 'Hindi'],
-          isTeamLawyer: true, // Flag to identify team lawyers
+          isTeamLawyer: true,
           barCouncilNumber: lawyer.barCouncilNumber || 'Not specified',
           joinDate: lawyer.teamJoinDate,
           email: lawyer.email,
@@ -118,24 +113,20 @@ const FindLawyer = () => {
         setTeamLawyers(transformedTeamLawyers);
         setFilteredTeamLawyers(transformedTeamLawyers);
         
-        // Set other lawyers as static data
         setOtherLawyers(lawyersData);
-        setFilteredOtherLawyers(lawyersData.slice(0, 10)); // Show only 10 initially
+        setFilteredOtherLawyers(lawyersData.slice(0, 10));
         
-        // Combine for all lawyers view if needed
         setAllLawyers([...transformedTeamLawyers, ...lawyersData]);
       } else {
         console.warn('⚠️ No team lawyers found or API error');
-        // Fallback to static data only
         setOtherLawyers(lawyersData);
-        setFilteredOtherLawyers(lawyersData.slice(0, 10)); // Show only 10 initially
+        setFilteredOtherLawyers(lawyersData.slice(0, 10));
         setAllLawyers(lawyersData);
       }
     } catch (error) {
       console.error('❌ Error fetching team lawyers:', error);
-      // Fallback to static data on error
       setOtherLawyers(lawyersData);
-      setFilteredOtherLawyers(lawyersData.slice(0, 10)); // Show only 10 initially
+      setFilteredOtherLawyers(lawyersData.slice(0, 10));
       setAllLawyers(lawyersData);
     } finally {
       setLoading(false);
@@ -143,36 +134,29 @@ const FindLawyer = () => {
   };
 
   useEffect(() => {
-    // Check payment status first
     checkClientPaymentStatus();
     
-    // Initial load with static data
     setOtherLawyers(lawyersData);
-    setFilteredOtherLawyers(lawyersData.slice(0, 10)); // Show only 10 initially
+    setFilteredOtherLawyers(lawyersData.slice(0, 10));
     setAllLawyers(lawyersData);
     
-    // Fetch team lawyers from API
     fetchTeamLawyers();
   }, []);
 
-  // NEW FUNCTION TO LOAD MORE OTHER LAWYERS
   const loadMoreOtherLawyers = () => {
-    setOtherLawyersToShow(prev => prev + 10); // Load 10 more lawyers
+    setOtherLawyersToShow(prev => prev + 10);
   };
 
-  // Apply filters to both sections
   useEffect(() => {
     const applyFilters = (lawyers) => {
       let filtered = [...lawyers];
       
-      // Apply location filter
       if (selectedState) {
         filtered = filtered.filter(lawyer => 
           lawyer.location.toLowerCase().includes(selectedState.toLowerCase())
         );
       }
       
-      // Apply speciality filter
       if (selectedSpeciality) {
         filtered = filtered.filter(lawyer => 
           lawyer.speciality.some(spec => 
@@ -181,14 +165,12 @@ const FindLawyer = () => {
         );
       }
       
-      // Apply rating filter
       if (selectedRating) {
         filtered = filtered.filter(lawyer => 
           Math.floor(lawyer.rating) >= parseInt(selectedRating)
         );
       }
       
-      // Apply sorting
       if (sortBy) {
         filtered = filtered.sort((a, b) => {
           switch (sortBy) {
@@ -205,28 +187,23 @@ const FindLawyer = () => {
           }
         });
       } else {
-        // Default sorting by rating
         filtered = filtered.sort((a, b) => b.rating - a.rating);
       }
       
       return filtered;
     };
 
-    // Apply filters to both sections
     const filteredTeam = applyFilters(teamLawyers);
     setFilteredTeamLawyers(filteredTeam);
     
     const filteredOther = applyFilters(otherLawyers);
-    setFilteredOtherLawyers(filteredOther.slice(0, otherLawyersToShow)); // Apply pagination
-    
+    setFilteredOtherLawyers(filteredOther.slice(0, otherLawyersToShow));
   }, [selectedState, selectedSpeciality, selectedRating, sortBy, teamLawyers, otherLawyers, otherLawyersToShow]);
 
-  // Reset pagination when filters change
   useEffect(() => {
     setOtherLawyersToShow(10);
   }, [selectedState, selectedSpeciality, selectedRating, sortBy]);
 
-  // PAYMENT FUNCTIONS
   const loadRazorpayScript = () => {
     return new Promise((resolve) => {
       const script = document.createElement('script');
@@ -355,7 +332,6 @@ const FindLawyer = () => {
           });
 
           if (verificationResponse.success) {
-            // After successful payment, send the request
             await sendRequestToLawyer(clientRequestDataBeforePayment);
             setShowClientPayment(false);
             setClientRequestDataBeforePayment(null);
@@ -396,12 +372,10 @@ const FindLawyer = () => {
     }
   };
 
-  // UPDATED SEND REQUEST FUNCTION WITH PAYMENT CHECK
   const handleSendRequest = (lawyer) => {
     console.log('🎯 === handleSendRequest FUNCTION CALLED ===');
     console.log('🎯 Lawyer received:', lawyer);
     
-    // Check if client has paid
     const hasPaidFromState = hasPaidClient;
     const hasPaidFromStorage = localStorage.getItem('userHasPaidClient') === 'true';
     const hasPaid = hasPaidFromState || hasPaidFromStorage;
@@ -410,7 +384,6 @@ const FindLawyer = () => {
 
     if (!hasPaid) {
       console.log('💰 Payment required, showing payment modal');
-      // Store request data for after payment
       setClientRequestDataBeforePayment({
         lawyer: lawyer,
         caseSummary: '',
@@ -420,13 +393,11 @@ const FindLawyer = () => {
       return;
     }
 
-    // If already paid, open request modal directly
     setSelectedLawyer(lawyer);
     setShowRequestModal(true);
     console.log('✅ Client has paid, opening request modal');
   };
 
-  // FUNCTION TO SEND REQUEST AFTER PAYMENT OR IF ALREADY PAID
   const sendRequestToLawyer = async (requestData) => {
     console.log('🔍 === START sendRequestToLawyer ===');
     
@@ -523,7 +494,6 @@ const FindLawyer = () => {
     }
   };
 
-  // UPDATED SUBMIT REQUEST HANDLER
   const handleSubmitRequest = async () => {
     const requestData = {
       lawyer: selectedLawyer,
@@ -534,17 +504,16 @@ const FindLawyer = () => {
     await sendRequestToLawyer(requestData);
   };
 
-  // PAYMENT MODAL COMPONENT
   const renderClientPaymentScreen = () => (
-    <div className="payment-overlay">
-      <div className="payment-modal-new">
-        <div className="container">
-          <div className="header">
+    <div className={styles.paymentOverlay}>
+      <div className={styles.paymentModalNew}>
+        <div className={styles.container}>
+          <div className={styles.header}>
             <h1>One-Time Client Registration Fee</h1>
             <p>Pay ₹{PRICING.CLIENT.BASIC.price} once to send unlimited case requests to lawyers! No recurring fees.</p>
             
             {clientRequestDataBeforePayment && (
-              <div className="payment-required-notice">
+              <div className={styles.paymentRequiredNotice}>
                 <h5>💰 Payment Required to Send Request</h5>
                 <p>You need to complete the one-time payment to send case requests to lawyers.</p>
                 <p><strong>After payment, you can send your request to {clientRequestDataBeforePayment.lawyer.name}</strong></p>
@@ -552,36 +521,36 @@ const FindLawyer = () => {
             )}
           </div>
           
-          <div className="card pricing-card client-pricing">
+          <div className={`${styles.card} ${styles.pricingCard} ${styles.clientPricing}`}>
             <h2>{PRICING.CLIENT.BASIC.name}</h2>
-            <div className="price-tag">₹{PRICING.CLIENT.BASIC.price}</div>
-            <div className="price-period">One-time payment • Lifetime access</div>
+            <div className={styles.priceTag}>₹{PRICING.CLIENT.BASIC.price}</div>
+            <div className={styles.pricePeriod}>One-time payment • Lifetime access</div>
             
-            <ul className="features">
+            <ul className={styles.features}>
               {PRICING.CLIENT.BASIC.features.map((feature, index) => (
                 <li key={index}><i className="fas fa-check-circle"></i> {feature}</li>
               ))}
             </ul>
           </div>
           
-          <div className="card form-card">
-            <div className="payment-summary">
+          <div className={`${styles.card} ${styles.formCard}`}>
+            <div className={styles.paymentSummary}>
               <h3>Payment Summary</h3>
-              <div className="payment-row">
+              <div className={styles.paymentRow}>
                 <span>One-time registration fee:</span>
                 <span>₹{PRICING.CLIENT.BASIC.price}.00</span>
               </div>
-              <div className="payment-row">
+              <div className={styles.paymentRow}>
                 <span>Tax:</span>
                 <span>₹0.00</span>
               </div>
-              <div className="payment-row total">
+              <div className={`${styles.paymentRow} ${styles.total}`}>
                 <span>Total Amount:</span>
                 <span>₹{PRICING.CLIENT.BASIC.price}.00</span>
               </div>
             </div>
             
-            <div className="form-group">
+            <div className={styles.formGroup}>
               <label style={{ display: 'flex', alignItems: 'flex-start', cursor: 'pointer', gap: '8px', fontSize: '14px', lineHeight: '1.4' }}>
                 <input type="checkbox" style={{ display: 'inline-block', width: '16px', height: '16px', minWidth: '16px', marginTop: '2px', cursor: 'pointer' }} required />
                 <span style={{ flex: 1 }}>
@@ -591,13 +560,13 @@ const FindLawyer = () => {
             </div>
             
             <button 
-              className="btn btn-primary client-pay-btn"
+              className={`${styles.btn} ${styles.btnPrimary} ${styles.clientPayBtn}`}
               onClick={() => initiateClientPayment(clientRequestDataBeforePayment)}
               disabled={clientPaymentLoading}
             >
               {clientPaymentLoading ? (
                 <>
-                  <div className="loading-spinner-small"></div>
+                  <div className={styles.loadingSpinnerSmall}></div>
                   Processing...
                 </>
               ) : (
@@ -608,7 +577,7 @@ const FindLawyer = () => {
         </div>
 
         <button 
-          className="close-btn-new"
+          className={styles.closeBtnNew}
           onClick={() => {
             setShowClientPayment(false);
             setClientRequestDataBeforePayment(null);
@@ -626,7 +595,7 @@ const FindLawyer = () => {
     setSelectedSpeciality('');
     setSelectedRating('');
     setSortBy('');
-    setOtherLawyersToShow(10); // Reset pagination
+    setOtherLawyersToShow(10);
   };
 
   const states = [...new Set(allLawyers.map(lawyer => lawyer.location))];
@@ -634,122 +603,117 @@ const FindLawyer = () => {
 
   const renderStars = (rating) => {
     return (
-      <div className="rating-stars">
+      <div className={styles.ratingStars}>
         {[1, 2, 3, 4, 5].map((star) => (
           <span
             key={star}
-            className={`star ${star <= rating ? 'filled' : ''}`}
+            className={`${styles.star} ${star <= rating ? styles.filled : ''}`}
           >
             ★
           </span>
         ))}
-        <span className="rating-text">({rating.toFixed(1)})</span>
+        <span className={styles.ratingText}>({rating.toFixed(1)})</span>
       </div>
     );
   };
 
-  // Lawyer Card Component - UPDATED WITH PAYMENT CHECK
+  // LawyerCard Component with scoped styles
   const LawyerCard = ({ lawyer, isTeamLawyer = false, onSendRequest }) => (
-    <div key={lawyer.id} className="dark-card">
-      <div className="card-glow"></div>
+    <div key={lawyer.id} className={styles.darkCard}>
+      <div className={styles.cardGlow}></div>
       
-      {/* Team Lawyer Badge - Only yellow badge for LegalMitra lawyers */}
       {isTeamLawyer && (
-        <div className="team-lawyer-badge">
-          <span className="badge-icon">⭐</span>
+        <div className={styles.teamLawyerBadge}>
+          <span className={styles.badgeIcon}>⭐</span>
           LegalMitra Team
         </div>
       )}
       
-      {/* Verified Badge - Only show for non-team lawyers */}
       {!isTeamLawyer && (
-        <div className="verified-badge">
-          <span className="badge-icon">✓</span>
+        <div className={styles.verifiedBadge}>
+          <span className={styles.badgeIcon}>✓</span>
           LegalMitra Verified
         </div>
       )}
       
-      <div className="card-header">
-        <div className="avatar-container">
-          <div className="avatar">
+      <div className={styles.cardHeader}>
+        <div className={styles.avatarContainer}>
+          <div className={styles.avatar}>
             {lawyer.gender === 'F' ? (
-              <div className="female-avatar">
-                <span className="gender-icon">♀</span>
+              <div className={styles.femaleAvatar}>
+                <span className={styles.genderIcon}>♀</span>
               </div>
             ) : (
-              <div className="male-avatar">
-                <span className="gender-icon">♂</span>
+              <div className={styles.maleAvatar}>
+                <span className={styles.genderIcon}>♂</span>
               </div>
             )}
-            <div className="experience-tag">{lawyer.experience}+ years</div>
+            <div className={styles.experienceTag}>{lawyer.experience}+ years</div>
           </div>
         </div>
         
-        <div className="lawyer-main-info">
-          <h3 className="lawyer-name">{lawyer.name}</h3>
-          <div className="location-info">
-            <span className="location-icon">📍</span>
+        <div className={styles.lawyerMainInfo}>
+          <h3 className={styles.lawyerName}>{lawyer.name}</h3>
+          <div className={styles.locationInfo}>
+            <span className={styles.locationIcon}>📍</span>
             {lawyer.location}
           </div>
           {renderStars(lawyer.rating)}
           
-          {/* Team lawyer join info */}
           {isTeamLawyer && lawyer.joinDate && (
-            <div className="team-join-info">
-              <span className="team-icon">🤝</span>
+            <div className={styles.teamJoinInfo}>
+              <span className={styles.teamIcon}>🤝</span>
               Team member since {new Date(lawyer.joinDate).toLocaleDateString()}
             </div>
           )}
         </div>
       </div>
 
-      <div className="card-body">
-        <div className="expertise-section">
+      <div className={styles.cardBody}>
+        <div className={styles.expertiseSection}>
           <h4>Areas of Expertise</h4>
-          <div className="expertise-tags">
+          <div className={styles.expertiseTags}>
             {lawyer.speciality.map(spec => (
-              <span key={spec} className="expertise-tag">{spec}</span>
+              <span key={spec} className={styles.expertiseTag}>{spec}</span>
             ))}
           </div>
         </div>
 
-        <div className="details-section">
-          <div className="detail-item">
-            <span className="detail-label">Jurisdiction:</span>
-            <span className="detail-value">{lawyer.jurisdiction}</span>
+        <div className={styles.detailsSection}>
+          <div className={styles.detailItem}>
+            <span className={styles.detailLabel}>Jurisdiction:</span>
+            <span className={styles.detailValue}>{lawyer.jurisdiction}</span>
           </div>
-          <div className="detail-item">
-            <span className="detail-label">Client Type:</span>
-            <span className="detail-value">{lawyer.clientType}</span>
+          <div className={styles.detailItem}>
+            <span className={styles.detailLabel}>Client Type:</span>
+            <span className={styles.detailValue}>{lawyer.clientType}</span>
           </div>
-          <div className="detail-item">
-            <span className="detail-label">Avg Case Duration:</span>
-            <span className="detail-value">{lawyer.avgDaysOfCompletion} days</span>
+          <div className={styles.detailItem}>
+            <span className={styles.detailLabel}>Avg Case Duration:</span>
+            <span className={styles.detailValue}>{lawyer.avgDaysOfCompletion} days</span>
           </div>
           
-          {/* Bar Council Number for team lawyers */}
           {isTeamLawyer && lawyer.barCouncilNumber && (
-            <div className="detail-item">
-              <span className="detail-label">Bar Council:</span>
-              <span className="detail-value">{lawyer.barCouncilNumber}</span>
+            <div className={styles.detailItem}>
+              <span className={styles.detailLabel}>Bar Council:</span>
+              <span className={styles.detailValue}>{lawyer.barCouncilNumber}</span>
             </div>
           )}
         </div>
 
-        <div className="languages-section">
+        <div className={styles.languagesSection}>
           <h4>Languages</h4>
-          <div className="language-tags">
+          <div className={styles.languageTags}>
             {lawyer.languages.map(lang => (
-              <span key={lang} className="language-tag">{lang}</span>
+              <span key={lang} className={styles.languageTag}>{lang}</span>
             ))}
           </div>
         </div>
 
-        {/* SEND REQUEST BUTTON - ONLY FOR TEAM LAWYERS */}
         {isTeamLawyer && (
-          <div className="action-section">
+          <div className={styles.actionSection}>
             <button
-              className="send-request-btn"
+              className={styles.sendRequestBtn}
               onClick={(e) => {
                 e.stopPropagation();
                 console.log('🟡 === SEND REQUEST BUTTON CLICKED ===');
@@ -771,37 +735,37 @@ const FindLawyer = () => {
   );
 
   return (
-    <div className="find-lawyer-dark">
-      <div className="dark-header">
-        <div className="header-content">
+    <div className={styles.findLawyerDark}>
+      <div className={styles.darkHeader}>
+        <div className={styles.headerContent}>
           <h1>Find Your Legal Expert</h1>
           <p>Connect with verified legal professionals across India</p>
-          <div className="header-stats">
-            <div className="stat">
-              <span className="stat-number">{teamLawyers.length + otherLawyers.length}+</span>
-              <span className="stat-label">Total Lawyers</span>
+          <div className={styles.headerStats}>
+            <div className={styles.stat}>
+              <span className={styles.statNumber}>{teamLawyers.length + otherLawyers.length}+</span>
+              <span className={styles.statLabel}>Total Lawyers</span>
             </div>
-            <div className="stat">
-              <span className="stat-number">{specialities.length}+</span>
-              <span className="stat-label">Legal Specialities</span>
+            <div className={styles.stat}>
+              <span className={styles.statNumber}>{specialities.length}+</span>
+              <span className={styles.statLabel}>Legal Specialities</span>
             </div>
-            <div className="stat">
-              <span className="stat-number">{states.length}+</span>
-              <span className="stat-label">Cities Covered</span>
+            <div className={styles.stat}>
+              <span className={styles.statNumber}>{states.length}+</span>
+              <span className={styles.statLabel}>Cities Covered</span>
             </div>
-            <div className="stat">
-              <span className="stat-number">{teamLawyers.length}</span>
-              <span className="stat-label">Team Lawyers</span>
+            <div className={styles.stat}>
+              <span className={styles.statNumber}>{teamLawyers.length}</span>
+              <span className={styles.statLabel}>Team Lawyers</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* Shared Filter Section */}
-      <div className="dark-filter-section">
-        <div className="filter-container">
-          <div className="filter-row">
-            <div className="filter-group">
+      <div className={styles.darkFilterSection}>
+        <div className={styles.filterContainer}>
+          <div className={styles.filterRow}>
+            <div className={styles.filterGroup}>
               <label>📍 Location</label>
               <select value={selectedState} onChange={(e) => setSelectedState(e.target.value)}>
                 <option value="">All Locations</option>
@@ -809,7 +773,7 @@ const FindLawyer = () => {
               </select>
             </div>
 
-            <div className="filter-group">
+            <div className={styles.filterGroup}>
               <label>⚖ Speciality</label>
               <select value={selectedSpeciality} onChange={(e) => setSelectedSpeciality(e.target.value)}>
                 <option value="">All Specialities</option>
@@ -817,7 +781,7 @@ const FindLawyer = () => {
               </select>
             </div>
 
-            <div className="filter-group">
+            <div className={styles.filterGroup}>
               <label>⭐ Rating</label>
               <select value={selectedRating} onChange={(e) => setSelectedRating(e.target.value)}>
                 <option value="">Any Rating</option>
@@ -826,7 +790,7 @@ const FindLawyer = () => {
               </select>
             </div>
 
-            <div className="filter-group">
+            <div className={styles.filterGroup}>
               <label>📊 Sort By</label>
               <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
                 <option value="">Rating (High to Low)</option>
@@ -838,14 +802,14 @@ const FindLawyer = () => {
             </div>
           </div>
 
-          <div className="action-row">
-            <button className="reset-btn" onClick={resetFilters}>
+          <div className={styles.actionRow}>
+            <button className={styles.resetBtn} onClick={resetFilters}>
               Reset All Filters
             </button>
-            <div className="results-count">
-              <span className="count-badge">{filteredTeamLawyers.length + filteredOtherLawyers.length}</span>
+            <div className={styles.resultsCount}>
+              <span className={styles.countBadge}>{filteredTeamLawyers.length + filteredOtherLawyers.length}</span>
               lawyers found
-              <span className="team-count"> ({filteredTeamLawyers.length} team, {filteredOtherLawyers.length} other)</span>
+              <span className={styles.teamCount}> ({filteredTeamLawyers.length} team, {filteredOtherLawyers.length} other)</span>
             </div>
           </div>
         </div>
@@ -856,25 +820,25 @@ const FindLawyer = () => {
 
       {/* REQUEST MODAL */}
       {showRequestModal && selectedLawyer && (
-        <div className="modal-overlay">
-          <div className="request-modal">
-            <div className="modal-header">
+        <div className={styles.modalOverlay}>
+          <div className={styles.requestModal}>
+            <div className={styles.modalHeader}>
               <h3>Send Request to {selectedLawyer.name}</h3>
               <button 
-                className="close-btn"
+                className={styles.closeBtn}
                 onClick={() => setShowRequestModal(false)}
               >
                 ✕
               </button>
             </div>
             
-            <div className="modal-body">
-              <div className="form-group">
+            <div className={styles.modalBody}>
+              <div className={styles.formGroup}>
                 <label>Case Type</label>
                 <select 
                   value={caseType} 
                   onChange={(e) => setCaseType(e.target.value)}
-                  className="case-type-select"
+                  className={styles.caseTypeSelect}
                 >
                   <option value="">Select Case Type</option>
                   <option value="Civil">Civil Case</option>
@@ -886,23 +850,22 @@ const FindLawyer = () => {
                 </select>
               </div>
 
-              <div className="form-group">
+              <div className={styles.formGroup}>
                 <label>Case Summary *</label>
                 <textarea
                   value={caseSummary}
                   onChange={(e) => setCaseSummary(e.target.value)}
                   placeholder="Please describe your legal issue in detail. Include relevant facts, parties involved, and what you're seeking..."
                   rows="6"
-                  className="case-summary-textarea"
+                  className={styles.caseSummaryTextarea}
                 />
-                <div className="char-count">{caseSummary.length}/500 characters</div>
+                <div className={styles.charCount}>{caseSummary.length}/500 characters</div>
               </div>
             </div>
 
-            <div className="modal-actions">
-          
+            <div className={styles.modalActions}>
               <button 
-                className="submit-request-btn"
+                className={styles.submitRequestBtn}
                 onClick={handleSubmitRequest}
                 disabled={isSubmitting || !caseSummary.trim()}
               >
@@ -914,36 +877,36 @@ const FindLawyer = () => {
       )}
 
       {loading ? (
-        <div className="loading-state">
-          <div className="loading-spinner"></div>
+        <div className={styles.loadingState}>
+          <div className={styles.loadingSpinner}></div>
           <p>Loading lawyers...</p>
         </div>
       ) : (
         <>
           {/* Section 1: LegalMitra Team Lawyers */}
-          <div className="lawyers-section team-lawyers-section">
-            <div className="section-header-wrapper">
-              <div className="section-header-content">
+          <div className={`${styles.lawyersSection} ${styles.teamLawyersSection}`}>
+            <div className={styles.sectionHeaderWrapper}>
+              <div className={styles.sectionHeaderContent}>
                 <h2>
-                  <span className="section-icon">⭐</span>
+                  <span className={styles.sectionIcon}>⭐</span>
                   LegalMitra Team Lawyers
                 </h2>
                 <p>Verified professionals who are officially part of our legal network</p>
-                <div className="section-stats">
+                <div className={styles.sectionStats}>
                   Showing {filteredTeamLawyers.length} of {teamLawyers.length} team lawyers
                 </div>
               </div>
             </div>
 
             {filteredTeamLawyers.length > 0 ? (
-              <div className="dark-grid">
+              <div className={styles.darkGrid}>
                 {filteredTeamLawyers.map((lawyer) => (
                   <LawyerCard key={lawyer.id} lawyer={lawyer} isTeamLawyer={true} onSendRequest={handleSendRequest} />
                 ))}
               </div>
             ) : (
-              <div className="no-results">
-                <div className="no-results-icon">👥</div>
+              <div className={styles.noResults}>
+                <div className={styles.noResultsIcon}>👥</div>
                 <h3>No team lawyers found</h3>
                 <p>Try adjusting your search criteria</p>
               </div>
@@ -951,15 +914,15 @@ const FindLawyer = () => {
           </div>
 
           {/* Section 2: Other Verified Lawyers */}
-          <div className="lawyers-section other-lawyers-section">
-            <div className="section-header-wrapper">
-              <div className="section-header-content">
+          <div className={`${styles.lawyersSection} ${styles.otherLawyersSection}`}>
+            <div className={styles.sectionHeaderWrapper}>
+              <div className={styles.sectionHeaderContent}>
                 <h2>
-                  <span className="section-icon">⚖️</span>
+                  <span className={styles.sectionIcon}>⚖️</span>
                   Other Verified Lawyers
                 </h2>
                 <p>Additional legal professionals available for consultation</p>
-                <div className="section-stats">
+                <div className={styles.sectionStats}>
                   Showing {filteredOtherLawyers.length} of {otherLawyers.length} lawyers
                 </div>
               </div>
@@ -967,17 +930,16 @@ const FindLawyer = () => {
 
             {filteredOtherLawyers.length > 0 ? (
                <>
-                <div className="dark-grid">
+                <div className={styles.darkGrid}>
                   {filteredOtherLawyers.map((lawyer) => (
                     <LawyerCard key={lawyer.id} lawyer={lawyer} isTeamLawyer={false} />
                   ))}
                 </div>
                 
-                {/* Load More Button for Other Lawyers */}
                 {filteredOtherLawyers.length < otherLawyers.length && (
-                  <div className="load-more-container">
+                  <div className={styles.loadMoreContainer}>
                     <button 
-                      className="load-more-btn"
+                      className={styles.loadMoreBtn}
                       onClick={loadMoreOtherLawyers}
                     >
                       Show 10 More Lawyers ({filteredOtherLawyers.length} of {otherLawyers.length} shown)
@@ -986,8 +948,8 @@ const FindLawyer = () => {
                 )}
               </>
             ) : (
-              <div className="no-results">
-                <div className="no-results-icon">🔍</div>
+              <div className={styles.noResults}>
+                <div className={styles.noResultsIcon}>🔍</div>
                 <h3>No lawyers found</h3>
                 <p>Try adjusting your search criteria</p>
               </div>

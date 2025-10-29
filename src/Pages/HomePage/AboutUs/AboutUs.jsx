@@ -44,20 +44,30 @@ const AboutUs = () => {
       {/* Founders Section */}
       <section className="founders-section">
         <div className="container">
-          <div className="section-header">
-            <h2>Our Founders</h2>
-            <p>The visionaries behind LegalMitra's innovative approach to legal technology</p>
+          <div className="section-header" style={{ textAlign: 'center', width: '100%' }}>
+            <h2 style={{ textAlign: 'center', margin: '0 auto', width: '100%' }}>Our Founders</h2>
+          
           </div>
           
           <div className="founders-grid">
             {/* Founder 1 */}
             <div className="founder-card">
-              <div className="founder-image">
-                <div className="image-placeholder">
-                  <span className="initials">AP</span>
-                </div>
-                <div className="founder-badge">Co-Founder</div>
-              </div>
+  <div className="founder-image">
+    <div className="image-placeholder">
+      {/* Replace with actual photo */}
+      <img 
+        src='../../../assets/abhi.jpg'
+               alt="Abhishek Pathak" 
+        className="founder-photo"
+        onError={(e) => {
+          e.target.style.display = 'none';
+          e.target.nextSibling.style.display = 'flex';
+        }}
+      />
+      <span className="initials" style={{display: 'none'}}>AP</span>
+    </div>
+    <div className="founder-badge">Co-Founder</div>
+  </div>
               <div className="founder-info">
                 <h3>Abhishek Pathak</h3>
                 <p className="founder-role">Legal-Tech Entrepreneur & Developer</p>
@@ -81,13 +91,24 @@ const AboutUs = () => {
             </div>
 
             {/* Founder 2 */}
-            <div className="founder-card">
-              <div className="founder-image">
-                <div className="image-placeholder">
-                  <span className="initials">AM</span>
-                </div>
-                <div className="founder-badge">Co-Founder</div>
-              </div>
+         <div className="founder-card">
+  <div className="founder-image">
+    <div className="image-placeholder">
+      {/* Replace with actual photo */}
+      <img 
+     
+        src="/path/to/abhishek-photo.jpg" 
+        alt="Abhishek Pathak" 
+        className="founder-photo"
+        onError={(e) => {
+          e.target.style.display = 'none';
+          e.target.nextSibling.style.display = 'flex';
+        }}
+      />
+      <span className="initials" style={{display: 'none'}}>AM</span>
+    </div>
+    <div className="founder-badge">Co-Founder</div>
+  </div>
               <div className="founder-info">
                 <h3>Anurag Mishra</h3>
                 <p className="founder-role">Legal Operations & Strategy</p>
@@ -209,9 +230,9 @@ const AboutUs = () => {
       {/* Features Showcase */}
       <section className="features-showcase">
         <div className="container">
-          <div className="section-header">
-            <h2>What Makes LegalMitra Unique</h2>
-            <p>Comprehensive legal solutions powered by cutting-edge technology</p>
+          <div className="section-header" style={{ textAlign: 'center', width: '100%' }}>
+            <h2 style={{ textAlign: 'center', margin: '0 auto', width: '100%' }}>What Makes LegalMitra Unique</h2>
+           
           </div>
           <div className="features-grid">
             <div className="feature-card">
@@ -255,7 +276,7 @@ const AboutUs = () => {
             <h2>Join the Legal Revolution</h2>
             <p>Be part of India's growing community of legal innovators and empowered citizens</p>
             <div className="cta-buttons">
-              <button className="cta-btn primary">Get Started Today</button>
+             
               <button className="cta-btn secondary" onClick={openContactForm}>
                 Contact Our Team
               </button>

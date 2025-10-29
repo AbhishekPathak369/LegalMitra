@@ -1579,14 +1579,14 @@ const UserProfileCard = ({ user, onClose, onDeleteUser, onSendEmail }) => {
                             <h3>{user.name || 'No Name'}</h3>
                             <p className="user-email">{user.email || 'No Email'}</p>
                             <div className="user-badges">
-                                <span className={`role-tag ${user.role || 'user'}`}>
+                                <span className={`role-tag ${user.role || 'user'}`}  style={{color:"black", backgroundColor:"white"}}>
                                     {user.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'User'}
                                 </span>
-                                <span className={`status-tag ${user.status?.toLowerCase() || 'active'}`}>
+                                <span className={`status-tag ${user.status?.toLowerCase() || 'active'}`} style={{color:"white",backgroundColor:"green"}}>
                                     {user.status || 'Active'}
                                 </span>
                                 {user.isVerified && (
-                                    <span className="verification-tag verified">
+                                    <span className="verification-tag verified" style={{color:"black", backgroundColor:"white"}}>
                                         ✅ Verified
                                     </span>
                                 )}
