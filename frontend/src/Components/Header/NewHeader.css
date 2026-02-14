@@ -14,6 +14,7 @@
   justify-content: space-between;
   align-items: center;
   box-sizing: border-box;
+  min-height: 66px; /* Set minimum height for consistency */
 }
 
 .header-content {
@@ -40,11 +41,11 @@
 .brand-name {
   font-size: 24px;
   font-weight: bold;
-  color: #2563eb; /* Your original blue color */
+  color: #2563eb;
 }
 
 .brand-highlight {
-  color: red; /* Your original red color */
+  color: red;
 }
 
 .auth-buttons {
@@ -59,18 +60,24 @@
   border: none;
   cursor: pointer;
   font-weight: 600;
-  background-color: red; /* Your original red */
+  background-color: red;
   color: white;
+  height: 40px; /* Fixed height for consistency */
+  display: flex;
+  align-items: center;
 }
 
 .btn-signup {
   padding: 8px 20px;
   border-radius: 4px;
-  border: 2px solid #1b2d48; /* Your original navy blue */
+  border: 2px solid #1b2d48;
   cursor: pointer;
   font-weight: 600;
   background-color: white;
-  color: #1b2d48; /* Your original navy blue */
+  color: #1b2d48;
+  height: 40px; /* Fixed height for consistency */
+  display: flex;
+  align-items: center;
 }
 
 .user-menu-container {
@@ -84,9 +91,10 @@
   background: none;
   border: none;
   cursor: pointer;
-  padding: 8px 12px;
+  padding: 4px 12px;
   border-radius: 4px;
   transition: background-color 0.3s;
+  height: 40px; /* Fixed height to match buttons */
 }
 
 .user-profile-trigger:hover {
@@ -105,6 +113,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-size: 14px;
 }
 
 .hidden-file-input {
@@ -121,6 +130,7 @@
   box-shadow: 0 2px 10px rgba(0,0,0,0.1);
   min-width: 150px;
   z-index: 1000;
+  margin-top: 4px;
 }
 
 .dropdown-option {
@@ -132,7 +142,7 @@
   cursor: pointer;
   transition: background-color 0.3s;
   font-size: 14px;
-  color: #333; /* Your original text color */
+  color: #333;
 }
 
 .dropdown-option:hover {
@@ -145,14 +155,14 @@
 }
 
 /* ============================================ */
-/* ONLY RESPONSIVE STYLES ADDED BELOW */
-/* NO COLORS OR ORIGINAL STYLES CHANGED */
+/* FIXED RESPONSIVE STYLES - CONSISTENT HEIGHTS */
 /* ============================================ */
 
 /* Tablet Styles */
 @media (max-width: 1024px) {
   .new-header {
-    padding: 15px 30px;
+    padding: 12px 30px;
+    min-height: 60px;
   }
   
   .brand-name {
@@ -167,7 +177,8 @@
 /* Mobile Styles */
 @media (max-width: 768px) {
   .new-header {
-    padding: 12px 20px;
+    padding: 8px 20px;
+    min-height: 52px; /* Consistent height for both states */
   }
   
   .header-logo {
@@ -185,10 +196,12 @@
   .btn-login, .btn-signup {
     padding: 6px 15px;
     font-size: 14px;
+    height: 36px; /* Fixed height */
   }
   
   .user-profile-trigger {
-    padding: 6px 8px;
+    padding: 4px 8px;
+    height: 36px; /* Fixed height to match buttons */
   }
   
   .profile-avatar {
@@ -204,6 +217,7 @@
   .dropdown-panel {
     min-width: 140px;
     right: 0;
+    margin-top: 4px;
   }
   
   .dropdown-option {
@@ -215,7 +229,8 @@
 /* Small Mobile Styles */
 @media (max-width: 480px) {
   .new-header {
-    padding: 10px 15px;
+    padding: 6px 15px;
+    min-height: 44px; /* Consistent height for both states */
   }
   
   .header-logo {
@@ -233,10 +248,12 @@
   .btn-login, .btn-signup {
     padding: 5px 12px;
     font-size: 13px;
+    height: 32px; /* Fixed height */
   }
   
   .user-profile-trigger {
-    padding: 4px 6px;
+    padding: 3px 6px;
+    height: 32px; /* Fixed height to match buttons */
     gap: 4px;
   }
   
@@ -252,6 +269,7 @@
   .dropdown-panel {
     min-width: 130px;
     right: 0;
+    margin-top: 4px;
   }
   
   .dropdown-option {
@@ -263,7 +281,8 @@
 /* Very Small Mobile Styles */
 @media (max-width: 360px) {
   .new-header {
-    padding: 8px 10px;
+    padding: 4px 10px;
+    min-height: 38px; /* Consistent height for both states */
   }
   
   .header-logo {
@@ -277,6 +296,12 @@
   .btn-login, .btn-signup {
     padding: 4px 10px;
     font-size: 12px;
+    height: 30px; /* Fixed height */
+  }
+  
+  .user-profile-trigger {
+    padding: 2px 5px;
+    height: 30px; /* Fixed height to match buttons */
   }
   
   .profile-avatar {
@@ -286,5 +311,6 @@
   
   .dropdown-panel {
     min-width: 120px;
+    margin-top: 4px;
   }
 }
