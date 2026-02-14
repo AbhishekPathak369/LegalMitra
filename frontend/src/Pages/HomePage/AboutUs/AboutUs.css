@@ -1,5 +1,81 @@
 /* AboutUs.css - Dark Theme with Original Structure */
+/* Add these styles to your existing AboutUs.css */
 
+.founder-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.image-placeholder {
+  width: 120px;
+  height: 120px;
+  background: linear-gradient(135deg, #60a5fa, #fbbf24);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem;
+  border: 3px solid #1e293b;
+  overflow: hidden;
+}
+
+.founder-description {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: #cbd5e1;
+  margin: 1rem 0;
+  padding: 0.5rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  border-left: 3px solid transparent;
+}
+
+.github-profile-link {
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.github-profile-link:hover {
+  transform: translateX(5px);
+  background: rgba(96, 165, 250, 0.2) !important;
+}
+
+.github-icon, .arrow-icon {
+  transition: transform 0.3s ease;
+}
+
+.github-profile-link:hover .arrow-icon {
+  transform: translateX(3px);
+}
+
+/* Ensure founder cards have proper spacing */
+.founder-card {
+  background: linear-gradient(135deg, #1e293b, #334155);
+  border-radius: 15px;
+  padding: 2.5rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(100, 116, 139, 0.3);
+  transition: all 0.3s ease;
+}
+
+.founder-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+  border-color: rgba(96, 165, 250, 0.5);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .image-placeholder {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .founder-card {
+    padding: 1.5rem;
+  }
+}
 .about-us-page {
   min-height: 100vh;
   background: 

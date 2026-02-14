@@ -12,7 +12,7 @@ const Navbar = () => {
 
   const navItems = [
     { id: 'home', label: 'Home', path: '/' },
-    { id: 'law-sections', label: 'LegalPedia', path: '/law-sections' },
+    { id: 'law-sections', label: 'Law Sections Info', path: '/law-sections' },
     { id: 'predict-bail', label: 'Predict Bail', path: '/predict-bail' },
     { id: 'my-collection', label: 'My Collection', path: '/my-collection' },
     { id: 'find-lawyer', label: 'Find a Lawyer', path: '/find-lawyer' },
@@ -26,10 +26,9 @@ const Navbar = () => {
     } else {
       navigate(item.path);
     }
-    setIsMenuOpen(false); // Close menu after navigation
+    setIsMenuOpen(false);
   };
 
-  // Determine active page from current route
   const getCurrentPageId = () => {
     const currentPath = location.pathname;
     const item = navItems.find(navItem => navItem.path === currentPath);
@@ -41,7 +40,6 @@ const Navbar = () => {
   return (
     <nav className="navbar">
       <div className="nav-container">
-        {/* Hamburger Menu Button - Only visible on mobile */}
         <button 
           className={`hamburger-menu ${isMenuOpen ? 'active' : ''}`}
           onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -52,7 +50,6 @@ const Navbar = () => {
           <span></span>
         </button>
 
-        {/* Desktop Navigation */}
         <div className="desktop-nav">
           {navItems.map((item) => (
             <button
@@ -65,7 +62,6 @@ const Navbar = () => {
           ))}
         </div>
 
-        {/* Mobile Navigation Menu */}
         <div className={`mobile-nav ${isMenuOpen ? 'open' : ''}`}>
           {navItems.map((item) => (
             <button
