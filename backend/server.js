@@ -11,7 +11,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors({
    origin: process.env.NODE_ENV === 'production' 
-  ? "https://legalmitra-ifed.onrender.com/"
+  ? "https://legalmitra-ifed.onrender.com"
   : "http://localhost:3000",
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -39,9 +39,6 @@ app.use("/api/verification", verificationRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/lawyer', lawyerRoutes);
 app.use('/api/requests', requestRoutes); // ✅ ADD THIS LINE
-
-
-
 
 // MongoDB connection
 mongoose.connect(process.env.MONGO_URI, {
