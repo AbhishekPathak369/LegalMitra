@@ -1,11 +1,11 @@
-/* NewHeader.css - ONLY RESPONSIVE STYLES ADDED */
+/* NewHeader.css - COMPACT PROFILE AREA */
 /* ALL YOUR ORIGINAL COLORS AND STYLES PRESERVED */
 
 .new-header {
   width: 100%;
   background-color: white;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  padding: 15px 40px;
+  padding: 10px 40px; /* Reduced from 15px */
   position: fixed;
   top: 0;
   left: 0;
@@ -14,7 +14,7 @@
   justify-content: space-between;
   align-items: center;
   box-sizing: border-box;
-  min-height: 66px; /* Set minimum height for consistency */
+  min-height: 60px; /* Reduced from 66px */
 }
 
 .header-content {
@@ -34,12 +34,12 @@
 }
 
 .header-logo {
-  height: 35px;
+  height: 32px; /* Reduced from 35px */
   width: auto;
 }
 
 .brand-name {
-  font-size: 24px;
+  font-size: 22px; /* Reduced from 24px */
   font-weight: bold;
   color: #2563eb;
 }
@@ -50,34 +50,36 @@
 
 .auth-buttons {
   display: flex;
-  gap: 15px;
+  gap: 12px; /* Reduced from 15px */
   align-items: center;
 }
 
 .btn-login {
-  padding: 8px 20px;
+  padding: 6px 16px; /* Reduced padding */
   border-radius: 4px;
   border: none;
   cursor: pointer;
   font-weight: 600;
   background-color: red;
   color: white;
-  height: 40px; /* Fixed height for consistency */
+  height: 36px; /* Reduced from 40px */
   display: flex;
   align-items: center;
+  font-size: 14px;
 }
 
 .btn-signup {
-  padding: 8px 20px;
+  padding: 6px 16px; /* Reduced padding */
   border-radius: 4px;
   border: 2px solid #1b2d48;
   cursor: pointer;
   font-weight: 600;
   background-color: white;
   color: #1b2d48;
-  height: 40px; /* Fixed height for consistency */
+  height: 36px; /* Reduced from 40px */
   display: flex;
   align-items: center;
+  font-size: 14px;
 }
 
 .user-menu-container {
@@ -87,33 +89,37 @@
 .user-profile-trigger {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px; /* Reduced from 8px */
   background: none;
   border: none;
   cursor: pointer;
-  padding: 4px 12px;
-  border-radius: 4px;
-  transition: background-color 0.3s;
-  height: 40px; /* Fixed height to match buttons */
+  padding: 4px 8px; /* Reduced padding */
+  border-radius: 30px; /* More rounded */
+  transition: all 0.3s ease;
+  height: 36px; /* Reduced from 40px */
+  border: 1px solid transparent;
 }
 
 .user-profile-trigger:hover {
-  background-color: rgba(0, 0, 0, 0.05);
+  background-color: rgba(0, 0, 0, 0.03);
+  border-color: #e0e0e0;
 }
 
 .profile-avatar {
-  width: 32px;
-  height: 32px;
+  width: 28px; /* Reduced from 32px */
+  height: 28px; /* Reduced from 32px */
   border-radius: 50%;
   object-fit: cover;
 }
 
 .user-display-name {
-  max-width: 100px;
+  max-width: 80px; /* Reduced from 100px */
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 14px;
+  font-size: 13px; /* Smaller font */
+  font-weight: 500;
+  color: #333;
 }
 
 .hidden-file-input {
@@ -122,26 +128,26 @@
 
 .dropdown-panel {
   position: absolute;
-  top: 100%;
+  top: calc(100% + 4px);
   right: 0;
   background: white;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-  min-width: 150px;
+  border: 1px solid #eaeaea;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  min-width: 160px;
   z-index: 1000;
-  margin-top: 4px;
+  overflow: hidden;
 }
 
 .dropdown-option {
   width: 100%;
-  padding: 12px 16px;
+  padding: 10px 16px;
   background: none;
   border: none;
   text-align: left;
   cursor: pointer;
-  transition: background-color 0.3s;
-  font-size: 14px;
+  transition: background-color 0.2s;
+  font-size: 13px;
   color: #333;
 }
 
@@ -155,30 +161,14 @@
 }
 
 /* ============================================ */
-/* FIXED RESPONSIVE STYLES - CONSISTENT HEIGHTS */
+/* COMPACT RESPONSIVE STYLES */
 /* ============================================ */
 
 /* Tablet Styles */
 @media (max-width: 1024px) {
   .new-header {
-    padding: 12px 30px;
-    min-height: 60px;
-  }
-  
-  .brand-name {
-    font-size: 22px;
-  }
-  
-  .user-display-name {
-    max-width: 80px;
-  }
-}
-
-/* Mobile Styles */
-@media (max-width: 768px) {
-  .new-header {
-    padding: 8px 20px;
-    min-height: 52px; /* Consistent height for both states */
+    padding: 8px 30px;
+    min-height: 56px;
   }
   
   .header-logo {
@@ -189,52 +179,20 @@
     font-size: 20px;
   }
   
-  .auth-buttons {
-    gap: 10px;
-  }
-  
-  .btn-login, .btn-signup {
-    padding: 6px 15px;
-    font-size: 14px;
-    height: 36px; /* Fixed height */
-  }
-  
-  .user-profile-trigger {
-    padding: 4px 8px;
-    height: 36px; /* Fixed height to match buttons */
-  }
-  
-  .profile-avatar {
-    width: 28px;
-    height: 28px;
-  }
-  
   .user-display-name {
-    max-width: 60px;
-    font-size: 14px;
-  }
-  
-  .dropdown-panel {
-    min-width: 140px;
-    right: 0;
-    margin-top: 4px;
-  }
-  
-  .dropdown-option {
-    padding: 10px 14px;
-    font-size: 13px;
+    max-width: 70px;
   }
 }
 
-/* Small Mobile Styles */
-@media (max-width: 480px) {
+/* Mobile Styles */
+@media (max-width: 768px) {
   .new-header {
-    padding: 6px 15px;
-    min-height: 44px; /* Consistent height for both states */
+    padding: 6px 20px;
+    min-height: 48px; /* Compact height */
   }
   
   .header-logo {
-    height: 24px;
+    height: 26px;
   }
   
   .brand-name {
@@ -246,30 +204,29 @@
   }
   
   .btn-login, .btn-signup {
-    padding: 5px 12px;
+    padding: 4px 12px;
     font-size: 13px;
-    height: 32px; /* Fixed height */
+    height: 32px; /* Compact */
   }
   
   .user-profile-trigger {
     padding: 3px 6px;
-    height: 32px; /* Fixed height to match buttons */
+    height: 32px; /* Compact */
     gap: 4px;
   }
   
   .profile-avatar {
-    width: 24px;
-    height: 24px;
+    width: 24px; /* Smaller */
+    height: 24px; /* Smaller */
   }
   
   .user-display-name {
-    display: none; /* Hide username on very small screens to save space */
+    max-width: 50px;
+    font-size: 12px;
   }
   
   .dropdown-panel {
-    min-width: 130px;
-    right: 0;
-    margin-top: 4px;
+    min-width: 140px;
   }
   
   .dropdown-option {
@@ -278,15 +235,15 @@
   }
 }
 
-/* Very Small Mobile Styles */
-@media (max-width: 360px) {
+/* Small Mobile Styles */
+@media (max-width: 480px) {
   .new-header {
-    padding: 4px 10px;
-    min-height: 38px; /* Consistent height for both states */
+    padding: 5px 15px;
+    min-height: 44px;
   }
   
   .header-logo {
-    height: 22px;
+    height: 24px;
   }
   
   .brand-name {
@@ -296,12 +253,12 @@
   .btn-login, .btn-signup {
     padding: 4px 10px;
     font-size: 12px;
-    height: 30px; /* Fixed height */
+    height: 30px;
   }
   
   .user-profile-trigger {
     padding: 2px 5px;
-    height: 30px; /* Fixed height to match buttons */
+    height: 30px;
   }
   
   .profile-avatar {
@@ -309,8 +266,47 @@
     height: 22px;
   }
   
+  .user-display-name {
+    display: none; /* Hide on very small screens */
+  }
+  
+  .dropdown-panel {
+    min-width: 130px;
+  }
+}
+
+/* Very Small Mobile Styles */
+@media (max-width: 360px) {
+  .new-header {
+    padding: 4px 10px;
+    min-height: 40px;
+  }
+  
+  .header-logo {
+    height: 22px;
+  }
+  
+  .brand-name {
+    font-size: 15px;
+  }
+  
+  .btn-login, .btn-signup {
+    padding: 3px 8px;
+    font-size: 11px;
+    height: 28px;
+  }
+  
+  .user-profile-trigger {
+    padding: 2px 4px;
+    height: 28px;
+  }
+  
+  .profile-avatar {
+    width: 20px;
+    height: 20px;
+  }
+  
   .dropdown-panel {
     min-width: 120px;
-    margin-top: 4px;
   }
 }
