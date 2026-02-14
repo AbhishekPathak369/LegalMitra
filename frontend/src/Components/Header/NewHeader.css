@@ -1,4 +1,4 @@
-/* NewHeader.css - PROFILE PHOTO FITS HEADER HEIGHT */
+/* NewHeader.css - EQUAL WIDTH AND HEIGHT FOR ROUND PROFILE */
 /* ALL OTHER STYLES PRESERVED EXACTLY */
 
 .new-header {
@@ -90,7 +90,7 @@
   position: relative;
 }
 
-/* ===== DESKTOP PROFILE - FITS HEADER HEIGHT ===== */
+/* ===== DESKTOP PROFILE - EQUAL WIDTH & HEIGHT ===== */
 @media (min-width: 1025px) {
   .user-profile-trigger {
     display: flex;
@@ -102,13 +102,13 @@
     padding: 4px 12px 4px 8px;
     border-radius: 40px;
     transition: all 0.3s ease;
-    height: 40px; /* Fixed height that fits within 60px header */
+    height: 40px;
     border: 1px solid transparent;
   }
 
   .profile-avatar {
-    width: 28px; /* Proper size for 40px container */
-    height: 28px;
+    width: 28px;
+    height: 28px; /* Same as width - makes it perfectly round */
     border-radius: 50%;
     object-fit: cover;
     display: block;
@@ -151,7 +151,7 @@
   
   .profile-avatar {
     width: 26px;
-    height: 26px;
+    height: 26px; /* Same as width */
     border-radius: 50%;
     object-fit: cover;
   }
@@ -198,7 +198,7 @@
   
   .profile-avatar {
     width: 24px;
-    height: 24px;
+    height: 24px; /* Same as width */
     border-radius: 50%;
     object-fit: cover;
   }
@@ -250,7 +250,7 @@
   
   .profile-avatar {
     width: 22px;
-    height: 22px;
+    height: 22px; /* Same as width */
   }
   
   .user-display-name {
@@ -287,7 +287,7 @@
   
   .profile-avatar {
     width: 20px;
-    height: 20px;
+    height: 20px; /* Same as width */
   }
   
   .user-display-name {
