@@ -1,4 +1,4 @@
-/* NewHeader.css - VERY SMALL PROFILE PHOTO */
+/* NewHeader.css - PROFILE PHOTO FITS HEADER HEIGHT */
 /* ALL OTHER STYLES PRESERVED EXACTLY */
 
 .new-header {
@@ -90,7 +90,7 @@
   position: relative;
 }
 
-/* ===== DESKTOP PROFILE - VERY SMALL SIZE ===== */
+/* ===== DESKTOP PROFILE - FITS HEADER HEIGHT ===== */
 @media (min-width: 1025px) {
   .user-profile-trigger {
     display: flex;
@@ -102,35 +102,26 @@
     padding: 4px 12px 4px 8px;
     border-radius: 40px;
     transition: all 0.3s ease;
-    height: auto;
-    min-height: 36px;
+    height: 40px; /* Fixed height that fits within 60px header */
     border: 1px solid transparent;
   }
 
-  .user-profile-trigger:hover {
-    background-color: rgba(0, 0, 0, 0.03);
-    border-color: #e0e0e0;
-  }
-
   .profile-avatar {
-    width: 24px; /* Very small size */
-    height: 24px; /* Very small size */
+    width: 28px; /* Proper size for 40px container */
+    height: 28px;
     border-radius: 50%;
     object-fit: cover;
     display: block;
-    border: 1px solid #e0e0e0;
   }
 
   .user-display-name {
     max-width: none;
     overflow: visible;
-    text-overflow: clip;
     white-space: nowrap;
-    font-size: 13px; /* Slightly smaller */
+    font-size: 14px;
     font-weight: 500;
     color: #333;
-    display: inline-block;
-    padding-right: 4px;
+    line-height: 1;
   }
 }
 
@@ -155,22 +146,18 @@
     gap: 6px;
     padding: 3px 10px 3px 6px;
     border-radius: 40px;
-    height: auto;
-    min-height: 34px;
+    height: 38px;
   }
   
   .profile-avatar {
-    width: 22px;
-    height: 22px;
+    width: 26px;
+    height: 26px;
     border-radius: 50%;
     object-fit: cover;
-    border: 1px solid #e0e0e0;
   }
   
   .user-display-name {
-    max-width: none;
-    overflow: visible;
-    font-size: 12px;
+    font-size: 13px;
     white-space: nowrap;
   }
 }
@@ -206,16 +193,14 @@
     gap: 5px;
     padding: 2px 8px 2px 4px;
     border-radius: 40px;
-    height: auto;
-    min-height: 32px;
+    height: 34px;
   }
   
   .profile-avatar {
-    width: 20px;
-    height: 20px;
+    width: 24px;
+    height: 24px;
     border-radius: 50%;
     object-fit: cover;
-    border: 1px solid #e0e0e0;
   }
   
   .user-display-name {
@@ -260,13 +245,12 @@
   .user-profile-trigger {
     padding: 2px 6px 2px 3px;
     gap: 4px;
-    min-height: 30px;
+    height: 32px;
   }
   
   .profile-avatar {
-    width: 18px;
-    height: 18px;
-    border: 1px solid #e0e0e0;
+    width: 22px;
+    height: 22px;
   }
   
   .user-display-name {
@@ -298,17 +282,16 @@
   
   .user-profile-trigger {
     padding: 1px 5px 1px 2px;
-    min-height: 28px;
+    height: 28px;
   }
   
   .profile-avatar {
-    width: 16px;
-    height: 16px;
-    border: 1px solid #e0e0e0;
+    width: 20px;
+    height: 20px;
   }
   
   .user-display-name {
-    display: none; /* Hide on very small screens */
+    display: none;
   }
   
   .dropdown-panel {
