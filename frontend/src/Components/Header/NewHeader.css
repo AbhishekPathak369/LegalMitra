@@ -1,11 +1,11 @@
-/* NewHeader.css - COMPACT PROFILE AREA */
+/* NewHeader.css - PERFECTLY BALANCED */
 /* ALL YOUR ORIGINAL COLORS AND STYLES PRESERVED */
 
 .new-header {
   width: 100%;
   background-color: white;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  padding: 10px 40px; /* Reduced from 15px */
+  padding: 8px 40px; /* Balanced padding */
   position: fixed;
   top: 0;
   left: 0;
@@ -14,7 +14,7 @@
   justify-content: space-between;
   align-items: center;
   box-sizing: border-box;
-  min-height: 60px; /* Reduced from 66px */
+  height: 60px; /* Fixed height instead of min-height */
 }
 
 .header-content {
@@ -34,12 +34,12 @@
 }
 
 .header-logo {
-  height: 32px; /* Reduced from 35px */
+  height: 32px;
   width: auto;
 }
 
 .brand-name {
-  font-size: 22px; /* Reduced from 24px */
+  font-size: 22px;
   font-weight: bold;
   color: #2563eb;
 }
@@ -50,36 +50,38 @@
 
 .auth-buttons {
   display: flex;
-  gap: 12px; /* Reduced from 15px */
+  gap: 12px;
   align-items: center;
 }
 
 .btn-login {
-  padding: 6px 16px; /* Reduced padding */
+  padding: 0 16px;
   border-radius: 4px;
   border: none;
   cursor: pointer;
   font-weight: 600;
   background-color: red;
   color: white;
-  height: 36px; /* Reduced from 40px */
+  height: 36px;
   display: flex;
   align-items: center;
   font-size: 14px;
+  line-height: 1;
 }
 
 .btn-signup {
-  padding: 6px 16px; /* Reduced padding */
+  padding: 0 16px;
   border-radius: 4px;
   border: 2px solid #1b2d48;
   cursor: pointer;
   font-weight: 600;
   background-color: white;
   color: #1b2d48;
-  height: 36px; /* Reduced from 40px */
+  height: 36px;
   display: flex;
   align-items: center;
   font-size: 14px;
+  line-height: 1;
 }
 
 .user-menu-container {
@@ -89,14 +91,14 @@
 .user-profile-trigger {
   display: flex;
   align-items: center;
-  gap: 6px; /* Reduced from 8px */
+  gap: 6px;
   background: none;
   border: none;
   cursor: pointer;
-  padding: 4px 8px; /* Reduced padding */
-  border-radius: 30px; /* More rounded */
+  padding: 0 8px;
+  border-radius: 30px;
   transition: all 0.3s ease;
-  height: 36px; /* Reduced from 40px */
+  height: 36px;
   border: 1px solid transparent;
 }
 
@@ -106,18 +108,18 @@
 }
 
 .profile-avatar {
-  width: 28px; /* Reduced from 32px */
-  height: 28px; /* Reduced from 32px */
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   object-fit: cover;
 }
 
 .user-display-name {
-  max-width: 80px; /* Reduced from 100px */
+  max-width: 80px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 13px; /* Smaller font */
+  font-size: 13px;
   font-weight: 500;
   color: #333;
 }
@@ -161,14 +163,14 @@
 }
 
 /* ============================================ */
-/* COMPACT RESPONSIVE STYLES */
+/* PERFECTLY SYNCHRONIZED RESPONSIVE STYLES */
 /* ============================================ */
 
 /* Tablet Styles */
 @media (max-width: 1024px) {
   .new-header {
-    padding: 8px 30px;
-    min-height: 56px;
+    padding: 6px 30px;
+    height: 56px;
   }
   
   .header-logo {
@@ -184,11 +186,11 @@
   }
 }
 
-/* Mobile Styles */
+/* Mobile Styles - EXACT 52px height */
 @media (max-width: 768px) {
   .new-header {
-    padding: 6px 20px;
-    min-height: 48px; /* Compact height */
+    padding: 5px 20px;
+    height: 52px; /* EXACT height for navbar alignment */
   }
   
   .header-logo {
@@ -204,20 +206,20 @@
   }
   
   .btn-login, .btn-signup {
-    padding: 4px 12px;
+    padding: 0 12px;
     font-size: 13px;
-    height: 32px; /* Compact */
+    height: 32px;
   }
   
   .user-profile-trigger {
-    padding: 3px 6px;
-    height: 32px; /* Compact */
+    padding: 0 6px;
+    height: 32px;
     gap: 4px;
   }
   
   .profile-avatar {
-    width: 24px; /* Smaller */
-    height: 24px; /* Smaller */
+    width: 24px;
+    height: 24px;
   }
   
   .user-display-name {
@@ -235,11 +237,11 @@
   }
 }
 
-/* Small Mobile Styles */
+/* Small Mobile Styles - EXACT 44px height */
 @media (max-width: 480px) {
   .new-header {
-    padding: 5px 15px;
-    min-height: 44px;
+    padding: 4px 15px;
+    height: 44px; /* EXACT height for navbar alignment */
   }
   
   .header-logo {
@@ -251,13 +253,13 @@
   }
   
   .btn-login, .btn-signup {
-    padding: 4px 10px;
+    padding: 0 10px;
     font-size: 12px;
     height: 30px;
   }
   
   .user-profile-trigger {
-    padding: 2px 5px;
+    padding: 0 4px;
     height: 30px;
   }
   
@@ -275,11 +277,11 @@
   }
 }
 
-/* Very Small Mobile Styles */
+/* Very Small Mobile Styles - EXACT 40px height */
 @media (max-width: 360px) {
   .new-header {
-    padding: 4px 10px;
-    min-height: 40px;
+    padding: 3px 10px;
+    height: 40px; /* EXACT height for navbar alignment */
   }
   
   .header-logo {
@@ -291,13 +293,13 @@
   }
   
   .btn-login, .btn-signup {
-    padding: 3px 8px;
+    padding: 0 8px;
     font-size: 11px;
     height: 28px;
   }
   
   .user-profile-trigger {
-    padding: 2px 4px;
+    padding: 0 3px;
     height: 28px;
   }
   
