@@ -10,7 +10,9 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors({
-    origin: "http://localhost:3000", // Your frontend URL
+   origin: process.env.NODE_ENV === 'production' 
+  ? "https://legalmitra.onrender.com"
+  : "http://localhost:3000",
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "Accept"]
@@ -24,6 +26,10 @@ const verificationRoutes = require("./routes/verification");
 const adminRoutes = require('./routes/admin');
 const lawyerRoutes = require('./routes/lawyer');
 const requestRoutes = require('./routes/requests'); // ✅ ADD THIS LINE
+const path = require("path");
+
+
+const _dirname=path.resolve();
 
 // ✅ REGISTER ALL ROUTES
 app.use("/api/auth", authRoutes);
@@ -33,6 +39,9 @@ app.use("/api/verification", verificationRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/lawyer', lawyerRoutes);
 app.use('/api/requests', requestRoutes); // ✅ ADD THIS LINE
+
+
+
 
 // MongoDB connection
 mongoose.connect(process.env.MONGO_URI, {

@@ -210,6 +210,7 @@ router.get("/realtime", protect, admin, async (req, res) => {
   try {
     console.log("🔄 Fetching real-time data...");
     
+    
     // Get current active users (users active in last 15 minutes)
     const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
     const activeUsers = await User.countDocuments({
