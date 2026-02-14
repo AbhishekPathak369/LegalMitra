@@ -1,4 +1,4 @@
-/* NewHeader.css - ONLY PROFILE AREA MODIFIED */
+/* NewHeader.css - ONLY DESKTOP PROFILE MODIFIED */
 /* ALL OTHER STYLES PRESERVED EXACTLY */
 
 .new-header {
@@ -88,43 +88,204 @@
   position: relative;
 }
 
-/* ===== COMPACT PROFILE AREA - MODIFIED ===== */
-.user-profile-trigger {
-  display: flex;
-  align-items: center;
-  gap: 4px; /* Reduced from 6px */
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0 6px; /* Reduced from 8px */
-  border-radius: 30px;
-  transition: all 0.3s ease;
-  height: 34px; /* Slightly reduced from 36px */
-  border: 1px solid transparent;
+/* ===== DESKTOP PROFILE - MODIFIED FOR COMPACT LOOK ===== */
+@media (min-width: 1025px) {
+  .user-profile-trigger {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0 10px;
+    border-radius: 40px;
+    transition: all 0.3s ease;
+    height: 38px;
+    border: 1px solid transparent;
+  }
+
+  .user-profile-trigger:hover {
+    background-color: rgba(0, 0, 0, 0.03);
+    border-color: #e0e0e0;
+  }
+
+  .profile-avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+
+  .user-display-name {
+    max-width: 90px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+  }
 }
 
-.user-profile-trigger:hover {
-  background-color: rgba(0, 0, 0, 0.03);
-  border-color: #e0e0e0;
+/* Tablet Styles - Keep existing */
+@media (max-width: 1024px) {
+  .new-header {
+    padding: 6px 30px;
+    height: 56px;
+  }
+  
+  .header-logo {
+    height: 28px;
+  }
+  
+  .brand-name {
+    font-size: 20px;
+  }
+  
+  .user-profile-trigger {
+    height: 32px;
+    padding: 0 5px;
+  }
+  
+  .profile-avatar {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .user-display-name {
+    max-width: 60px;
+    font-size: 12px;
+  }
 }
 
-.profile-avatar {
-  width: 26px; /* Reduced from 28px */
-  height: 26px; /* Reduced from 28px */
-  border-radius: 50%;
-  object-fit: cover;
+/* Mobile Styles - Keep existing */
+@media (max-width: 768px) {
+  .new-header {
+    padding: 5px 20px;
+    height: 52px;
+  }
+  
+  .header-logo {
+    height: 26px;
+  }
+  
+  .brand-name {
+    font-size: 18px;
+  }
+  
+  .auth-buttons {
+    gap: 8px;
+  }
+  
+  .btn-login, .btn-signup {
+    padding: 0 12px;
+    font-size: 13px;
+    height: 32px;
+  }
+  
+  .user-profile-trigger {
+    padding: 0 4px;
+    height: 30px;
+    gap: 3px;
+  }
+  
+  .profile-avatar {
+    width: 22px;
+    height: 22px;
+  }
+  
+  .user-display-name {
+    max-width: 50px;
+    font-size: 11px;
+  }
+  
+  .dropdown-panel {
+    min-width: 140px;
+  }
+  
+  .dropdown-option {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
 }
 
-.user-display-name {
-  max-width: 70px; /* Reduced from 80px */
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 12px; /* Reduced from 13px */
-  font-weight: 500;
-  color: #333;
+/* Small Mobile Styles - Keep existing */
+@media (max-width: 480px) {
+  .new-header {
+    padding: 4px 15px;
+    height: 44px;
+  }
+  
+  .header-logo {
+    height: 24px;
+  }
+  
+  .brand-name {
+    font-size: 16px;
+  }
+  
+  .btn-login, .btn-signup {
+    padding: 0 10px;
+    font-size: 12px;
+    height: 30px;
+  }
+  
+  .user-profile-trigger {
+    padding: 0 3px;
+    height: 28px;
+  }
+  
+  .profile-avatar {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .user-display-name {
+    display: none;
+  }
+  
+  .dropdown-panel {
+    min-width: 130px;
+  }
 }
 
+/* Very Small Mobile Styles - Keep existing */
+@media (max-width: 360px) {
+  .new-header {
+    padding: 3px 10px;
+    height: 40px;
+  }
+  
+  .header-logo {
+    height: 22px;
+  }
+  
+  .brand-name {
+    font-size: 15px;
+  }
+  
+  .btn-login, .btn-signup {
+    padding: 0 8px;
+    font-size: 11px;
+    height: 28px;
+  }
+  
+  .user-profile-trigger {
+    padding: 0 2px;
+    height: 26px;
+  }
+  
+  .profile-avatar {
+    width: 18px;
+    height: 18px;
+  }
+  
+  .dropdown-panel {
+    min-width: 120px;
+  }
+}
+
+/* Keep existing dropdown styles */
 .hidden-file-input {
   display: none;
 }
@@ -161,170 +322,4 @@
 .dropdown-option:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-
-/* ============================================ */
-/* RESPONSIVE STYLES - PRESERVED */
-/* ============================================ */
-
-/* Tablet Styles */
-@media (max-width: 1024px) {
-  .new-header {
-    padding: 6px 30px;
-    height: 56px;
-  }
-  
-  .header-logo {
-    height: 28px;
-  }
-  
-  .brand-name {
-    font-size: 20px;
-  }
-  
-  /* Compact profile on tablet */
-  .user-profile-trigger {
-    height: 32px;
-    padding: 0 5px;
-  }
-  
-  .profile-avatar {
-    width: 24px;
-    height: 24px;
-  }
-  
-  .user-display-name {
-    max-width: 60px;
-    font-size: 12px;
-  }
-}
-
-/* Mobile Styles */
-@media (max-width: 768px) {
-  .new-header {
-    padding: 5px 20px;
-    height: 52px;
-  }
-  
-  .header-logo {
-    height: 26px;
-  }
-  
-  .brand-name {
-    font-size: 18px;
-  }
-  
-  .auth-buttons {
-    gap: 8px;
-  }
-  
-  .btn-login, .btn-signup {
-    padding: 0 12px;
-    font-size: 13px;
-    height: 32px;
-  }
-  
-  /* Compact profile on mobile */
-  .user-profile-trigger {
-    padding: 0 4px;
-    height: 30px;
-    gap: 3px;
-  }
-  
-  .profile-avatar {
-    width: 22px;
-    height: 22px;
-  }
-  
-  .user-display-name {
-    max-width: 50px;
-    font-size: 11px;
-  }
-  
-  .dropdown-panel {
-    min-width: 140px;
-  }
-  
-  .dropdown-option {
-    padding: 8px 12px;
-    font-size: 12px;
-  }
-}
-
-/* Small Mobile Styles */
-@media (max-width: 480px) {
-  .new-header {
-    padding: 4px 15px;
-    height: 44px;
-  }
-  
-  .header-logo {
-    height: 24px;
-  }
-  
-  .brand-name {
-    font-size: 16px;
-  }
-  
-  .btn-login, .btn-signup {
-    padding: 0 10px;
-    font-size: 12px;
-    height: 30px;
-  }
-  
-  /* Compact profile on small mobile */
-  .user-profile-trigger {
-    padding: 0 3px;
-    height: 28px;
-  }
-  
-  .profile-avatar {
-    width: 20px;
-    height: 20px;
-  }
-  
-  .user-display-name {
-    display: none; /* Hide on very small screens */
-  }
-  
-  .dropdown-panel {
-    min-width: 130px;
-  }
-}
-
-/* Very Small Mobile Styles */
-@media (max-width: 360px) {
-  .new-header {
-    padding: 3px 10px;
-    height: 40px;
-  }
-  
-  .header-logo {
-    height: 22px;
-  }
-  
-  .brand-name {
-    font-size: 15px;
-  }
-  
-  .btn-login, .btn-signup {
-    padding: 0 8px;
-    font-size: 11px;
-    height: 28px;
-  }
-  
-  /* Compact profile on very small mobile */
-  .user-profile-trigger {
-    padding: 0 2px;
-    height: 26px;
-  }
-  
-  .profile-avatar {
-    width: 18px;
-    height: 18px;
-  }
-  
-  .dropdown-panel {
-    min-width: 120px;
-  }
 }
