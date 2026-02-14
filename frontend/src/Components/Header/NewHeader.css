@@ -107,7 +107,7 @@
   }
 
   .profile-avatar {
-    width: 28px;
+    width: 31px;
     height: 28px; /* Same as width - makes it perfectly round */
     border-radius: 50%;
     object-fit: cover;
