@@ -1,6 +1,7 @@
 # LegalMitra - Comprehensive Legal Management Platform
 
-<img width="1901" height="153" alt="image" src="https://github.com/user-attachments/assets/69af48ef-b3c5-4966-b768-cedf71e84aef" />
+<img width="1084" height="92" alt="image" src="https://github.com/user-attachments/assets/13347816-42b4-4325-a9fe-2c915940bbfc" />
+
 
 
 ## 🌟 Overview
@@ -39,7 +40,7 @@ LegalMitra is a full-stack legal management platform that bridges the gap betwee
 ## 📋 Key Features
 
 ### 🏠 Homepage with Dynamic Analytics
-<img width="1900" height="904" alt="image" src="https://github.com/user-attachments/assets/4b66f376-1a7b-4392-a4e0-9114165b2ddf" />
+<img width="1083" height="523" alt="image" src="https://github.com/user-attachments/assets/cc97ae37-1592-4314-a563-b293417a6bbb" />
 
 - *Real-time Visitor Counter*: Dynamic counter tracking platform visits
 - *Feature Showcase*: Interactive display of all platform capabilities
@@ -48,7 +49,7 @@ LegalMitra is a full-stack legal management platform that bridges the gap betwee
 - *Call-to-Action Sections*: Easy navigation to key features
 
 ### 👥 Multi-Role Authentication System
-<img width="1314" height="754" alt="image" src="https://github.com/user-attachments/assets/44e8f5f5-0505-48ea-bcea-d2abe95ebf1c" />
+<img width="1091" height="629" alt="image" src="https://github.com/user-attachments/assets/7d4a7988-dbdd-4200-bdce-faccd04d91a9" />
 
 - *Lawyer Portal*: Complete case management ecosystem
 - *Client Dashboard*: Case tracking and lawyer communication
@@ -57,7 +58,7 @@ LegalMitra is a full-stack legal management platform that bridges the gap betwee
 - *Profile Management*: Personal and professional information
 
 ### ⚖ Predict Bail Feature
-<img width="1708" height="727" alt="image" src="https://github.com/user-attachments/assets/79217f01-f9df-45e1-babe-d3c940f87ecf" />
+<img width="1097" height="484" alt="image" src="https://github.com/user-attachments/assets/6dc52242-ba01-43d5-99eb-36065f58c2f8" />
 
 - *AI-Powered Analysis*: Intelligent bail probability assessment
 - *Multi-factor Evaluation*: Crime type, criminal history, personal circumstances
@@ -68,7 +69,7 @@ LegalMitra is a full-stack legal management platform that bridges the gap betwee
 ### 💼 My Collection - Advanced Case Management
 
 #### For Lawyers:
-<img width="1883" height="860" alt="image" src="https://github.com/user-attachments/assets/e8142699-d75d-4c5c-9ab4-289e3b6292af" />
+<img width="1104" height="527" alt="image" src="https://github.com/user-attachments/assets/c9fcda1b-f3ac-4aef-a4ef-c5bf4044a454" />
 
 - *Case Portfolio*: Comprehensive view of all handled cases
 - *Client Management*: Detailed client profiles and contact information
@@ -77,7 +78,7 @@ LegalMitra is a full-stack legal management platform that bridges the gap betwee
 - *Performance Analytics*: Success rates and case statistics
 
 #### For Clients:
-![WhatsApp Image 2025-11-07 at 11 14 19_c76d2929](https://github.com/user-attachments/assets/10642af9-d00f-4dbb-8719-5ea09cce2b89)
+<img width="1120" height="518" alt="image" src="https://github.com/user-attachments/assets/0be46682-fda2-4b28-a764-f88e7fb0337c" />
 
 - *Case Overview*: Track all personal legal matters
 - *Lawyer Communication*: Direct messaging and contact system
@@ -86,7 +87,7 @@ LegalMitra is a full-stack legal management platform that bridges the gap betwee
 - *Status Updates*: Real-time case progress notifications
 
 ### 💰 Expense Manager & Payment System
-![WhatsApp Image 2025-11-07 at 11 16 39_afd0efe1](https://github.com/user-attachments/assets/1c211130-2ce4-4c19-9608-912b2dbe157f)
+<img width="1041" height="723" alt="image" src="https://github.com/user-attachments/assets/d18bb071-1904-47fb-855d-912ded3875f2" />
 
 - *Cost Calculator*: Detailed legal expense breakdown
 - *Payment Planning*: Installment and one-time payment options
@@ -95,7 +96,7 @@ LegalMitra is a full-stack legal management platform that bridges the gap betwee
 - *Financial Reports*: Exportable expense summaries
 
 ### 📁 Document Vault & Manager
-<img width="1063" height="742" alt="image" src="https://github.com/user-attachments/assets/e1c6a4d0-8c2b-4db8-8876-9b8893f2acee" />
+<img width="981" height="636" alt="image" src="https://github.com/user-attachments/assets/5abf158a-71f8-4d2e-a3e3-57bfd12256d1" />
 
 
 - *Secure Cloud Storage*: Cloudinary-integrated document storage
@@ -105,7 +106,7 @@ LegalMitra is a full-stack legal management platform that bridges the gap betwee
 - *Version History*: Track document changes and updates
 
 ### 👨‍⚖ Professional Profile System
-<img width="1895" height="860" alt="image" src="https://github.com/user-attachments/assets/d364c87a-1ac8-4b39-b252-2e2890e2b640" />
+<img width="992" height="514" alt="image" src="https://github.com/user-attachments/assets/9347ce0b-947d-4be8-ba7c-aab737af164e" />
 
 - *Verified Lawyer Profiles*: Bar council verified status badges
 - *Performance Metrics*: Case success rates and client reviews
@@ -114,7 +115,7 @@ LegalMitra is a full-stack legal management platform that bridges the gap betwee
 - *Contact Management*: Secure client communication channels
 
 ### 🔍 Find a Lawyer Directory
-<img width="1881" height="726" alt="image" src="https://github.com/user-attachments/assets/c9ce26ae-4a43-4133-9c47-e7f37b2d6ae5" />
+<img width="997" height="406" alt="image" src="https://github.com/user-attachments/assets/a36b4515-309b-4735-82eb-e277c199c513" />
 
 
 - *Advanced Search*: Filter by specialization, experience, location
@@ -124,13 +125,9 @@ LegalMitra is a full-stack legal management platform that bridges the gap betwee
 - *Direct Booking*: Schedule consultations and meetings
 
 ### 📊 Admin Management Panel
-<img width="1888" height="857" alt="image" src="https://github.com/user-attachments/assets/e42dae55-d9fa-4784-808f-2d38ef67e885" />
 
-<img width="1889" height="852" alt="image" src="https://github.com/user-attachments/assets/8adfcd5e-25db-4835-9735-61b577cdbc86" />
+<img width="366" height="738" alt="image" src="https://github.com/user-attachments/assets/095d0784-14fb-4cac-bdb3-54693f729430" />
 
-<img width="1379" height="740" alt="image" src="https://github.com/user-attachments/assets/4bc2440a-49b5-43a3-a8ba-405a8f9328d8" />
-
-<img width="1141" height="759" alt="image" src="https://github.com/user-attachments/assets/eda639e9-bc3c-4c32-b8c7-3be781ec61d0" />
 
 - *User Verification*: Approve/reject lawyer registration requests
 - *Platform Analytics*: User growth, revenue, and activity metrics
@@ -139,7 +136,7 @@ LegalMitra is a full-stack legal management platform that bridges the gap betwee
 - *System Administration*: User management and platform settings
 
 ### 🔔 Real-time Notification System
-<img width="618" height="512" alt="image" src="https://github.com/user-attachments/assets/cf67f730-4c5f-4b41-b3ae-3b1a60926e8f" />
+<img width="855" height="646" alt="image" src="https://github.com/user-attachments/assets/0f7cef9e-e44c-44b9-9b2d-d243589ee007" />
 
 - *Case Updates*: Instant notifications for case progress
 - *Payment Alerts*: Payment confirmations and reminders
@@ -148,9 +145,7 @@ LegalMitra is a full-stack legal management platform that bridges the gap betwee
 - *Admin Alerts*: System notifications and important updates
 
 ### 💳 Integrated Payment System
-<img width="1498" height="795" alt="image" src="https://github.com/user-attachments/assets/9cebbab0-a319-4732-ba50-9ae25d5da750" />
-
-<img width="1409" height="757" alt="image" src="https://github.com/user-attachments/assets/3c25c04f-02fc-48ba-9670-d0b2d8ba7c8b" />
+––<img width="719" height="763" alt="image" src="https://github.com/user-attachments/assets/8ba92c43-07d1-4b10-8a28-b2274901dfff" />
 
 
 - *Razorpay Integration*: Secure payment processing
@@ -160,9 +155,8 @@ LegalMitra is a full-stack legal management platform that bridges the gap betwee
 - *Invoice Generation*: Automated receipt and invoice creation
 
 ### 📱 Responsive Design
-<img width="613" height="786" alt="image" src="https://github.com/user-attachments/assets/5d12e8b5-f03d-4392-93ce-ee5ef7c77bb7" />
-
-<img width="443" height="615" alt="image" src="https://github.com/user-attachments/assets/af9805d7-e97a-4cd3-a54f-fe3bc34e77b9" />
+<img width="374" height="606" alt="image" src="https://github.com/user-attachments/assets/0c6b5a57-921b-4116-b9b5-44e2d45de780" />
+" />
 
 - *Mobile-First Approach*: Optimized for all device sizes
 - *Cross-Browser Compatibility*: Works on all modern browsers
@@ -171,7 +165,7 @@ LegalMitra is a full-stack legal management platform that bridges the gap betwee
 - *Intuitive UI/UX*: User-friendly interface and navigation
 
 ## 🗂 Project Structure
-<img width="550" height="349" alt="image" src="https://github.com/user-attachments/assets/aceef59c-8950-4e3a-96f5-77b9f4800d90" />
+<img width="546" height="313" alt="image" src="https://github.com/user-attachments/assets/02d0eed6-c4ca-47aa-80a0-f0a3bd3b4c39" />
 
 
 ## 🚀 Installation & Setup
@@ -200,7 +194,7 @@ LegalMitra is a full-stack legal management platform that bridges the gap betwee
 ### Backend Environment Variables
 env
 
-![WhatsApp Image 2025-11-07 at 12 56 55_3d569216](https://github.com/user-attachments/assets/7c64dad9-e1f8-4ba2-99bc-643c9f9a726f)
+<img width="375" height="236" alt="image" src="https://github.com/user-attachments/assets/359f08cd-e270-4ca3-b5f7-702b1aa14c77" />
 
 
 
